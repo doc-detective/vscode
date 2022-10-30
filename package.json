@@ -1,0 +1,93 @@
+{
+  "name": "doc-detective-vsc",
+  "displayName": "Doc Detective",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.72.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:doc-detective-vsc.test",
+    "onCommand:doc-detective-vsc.test-single",
+    "onCommand:doc-detective-vsc.coverage",
+    "onCommand:doc-detective-vsc.coverage-single",
+    "onCommand:doc-detective-vsc.suggest",
+    "onCommand:doc-detective-vsc.suggest-single",
+    "onCommand:doc-detective-vsc.insert-start",
+    "onCommand:doc-detective-vsc.insert-ignore",
+    "onCommand:doc-detective-vsc.insert-end",
+    "onCommand:doc-detective-vsc.insert-action",
+    "onCommand:doc-detective-vsc.detect-markup"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "doc-detective-vsc.test",
+        "title": "Doc Detective: Run Tests"
+      },
+      {
+        "command": "doc-detective-vsc.test-single",
+        "title": "Doc Detective: Run Tests - Current File"
+      },
+      {
+        "command": "doc-detective-vsc.coverage-single",
+        "title": "Doc Detective: Analyze Test Coverage"
+      },
+      {
+        "command": "doc-detective-vsc.coverage",
+        "title": "Doc Detective: Analyze Test Coverage - Current File"
+      },
+      {
+        "command": "doc-detective-vsc.suggest",
+        "title": "Doc Detective: Suggest Tests"
+      },
+      {
+        "command": "doc-detective-vsc.suggest-single",
+        "title": "Doc Detective: Suggest Tests - Current File"
+      },
+      {
+        "command": "doc-detective-vsc.insert-start",
+        "title": "Doc Detective: Insert Statement - Test Start"
+      },
+      {
+        "command": "doc-detective-vsc.insert-ignore",
+        "title": "Doc Detective: Insert Statement - Test Ignore"
+      },
+      {
+        "command": "doc-detective-vsc.insert-end",
+        "title": "Doc Detective: Insert Statement - Test End"
+      },
+      {
+        "command": "doc-detective-vsc.insert-action",
+        "title": "Doc Detective: Insert Statement - Action"
+      },
+      {
+        "command": "doc-detective-vsc.detect-markup",
+        "title": "Doc Detective: Detect Uncovered Markup"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.0.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.72.0",
+    "@vscode/test-electron": "^2.1.5",
+    "eslint": "^8.24.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.8.4"
+  },
+  "dependencies": {
+    "doc-detective": "^1.2.3"
+  }
+}
