@@ -1,5 +1,5 @@
 {
-  "name": "doc-detective-vsc",
+  "name": "doc-detective",
   "displayName": "Doc Detective",
   "description": "",
   "version": "0.0.1",
@@ -10,63 +10,74 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:doc-detective-vsc.test",
-    "onCommand:doc-detective-vsc.test-single",
-    "onCommand:doc-detective-vsc.coverage",
-    "onCommand:doc-detective-vsc.coverage-single",
-    "onCommand:doc-detective-vsc.suggest",
-    "onCommand:doc-detective-vsc.suggest-single",
-    "onCommand:doc-detective-vsc.insert-start",
-    "onCommand:doc-detective-vsc.insert-ignore",
-    "onCommand:doc-detective-vsc.insert-end",
-    "onCommand:doc-detective-vsc.insert-action",
-    "onCommand:doc-detective-vsc.detect-markup"
+    "onCommand:doc-detective.set-config-path",
+    "onCommand:doc-detective.test",
+    "onCommand:doc-detective.test-single",
+    "onCommand:doc-detective.coverage",
+    "onCommand:doc-detective.coverage-single",
+    "onCommand:doc-detective.suggest",
+    "onCommand:doc-detective.suggest-single",
+    "onCommand:doc-detective.insert-start",
+    "onCommand:doc-detective.insert-ignore",
+    "onCommand:doc-detective.insert-end",
+    "onCommand:doc-detective.insert-action",
+    "onCommand:doc-detective.detect-markup"
   ],
   "main": "./extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Doc Detective",
+      "properties": {
+        "docDetective.configPath": {
+          "type": "string",
+          "default": null,
+          "description": "Path to your Doc Detective configuration file."
+        }
+      }
+    },
     "commands": [
       {
-        "command": "doc-detective-vsc.test",
+        "command": "doc-detective.test",
         "title": "Doc Detective: Run Tests"
       },
       {
-        "command": "doc-detective-vsc.test-single",
+        "command": "doc-detective.test-single",
         "title": "Doc Detective: Run Tests - Current File"
       },
       {
-        "command": "doc-detective-vsc.coverage-single",
+        "command": "doc-detective.coverage",
         "title": "Doc Detective: Analyze Test Coverage"
       },
       {
-        "command": "doc-detective-vsc.coverage",
+        "command": "doc-detective.coverage-single",
         "title": "Doc Detective: Analyze Test Coverage - Current File"
       },
       {
-        "command": "doc-detective-vsc.suggest",
+        "command": "doc-detective.suggest",
         "title": "Doc Detective: Suggest Tests"
       },
       {
-        "command": "doc-detective-vsc.suggest-single",
+        "command": "doc-detective.suggest-single",
         "title": "Doc Detective: Suggest Tests - Current File"
       },
       {
-        "command": "doc-detective-vsc.insert-start",
+        "command": "doc-detective.insert-start",
         "title": "Doc Detective: Insert Statement - Test Start"
       },
       {
-        "command": "doc-detective-vsc.insert-ignore",
+        "command": "doc-detective.insert-ignore",
         "title": "Doc Detective: Insert Statement - Test Ignore"
       },
       {
-        "command": "doc-detective-vsc.insert-end",
+        "command": "doc-detective.insert-end",
         "title": "Doc Detective: Insert Statement - Test End"
       },
       {
-        "command": "doc-detective-vsc.insert-action",
+        "command": "doc-detective.insert-action",
         "title": "Doc Detective: Insert Statement - Action"
       },
       {
-        "command": "doc-detective-vsc.detect-markup",
+        "command": "doc-detective.detect-markup",
         "title": "Doc Detective: Detect Uncovered Markup"
       }
     ]
