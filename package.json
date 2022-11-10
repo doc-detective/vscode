@@ -103,7 +103,7 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "doc-detective": "^1.2.4"
+    "doc-detective": "^1.2.3"
   },
   "repository": {
     "type": "git",
