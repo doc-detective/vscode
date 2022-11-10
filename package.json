@@ -1,12 +1,16 @@
 {
   "name": "doc-detective",
   "displayName": "Doc Detective",
-  "description": "",
+  "publisher": "hawkeyexl",
+  "description": "The documentation testing framework.",
   "version": "0.0.1",
+  "icon": "https://github.com/hawkeyexl/doc-detective-vsc/blob/main/icon.png",
+  "preview": true,
   "engines": {
     "vscode": "^1.72.0"
   },
   "categories": [
+    "Testing",
     "Other"
   ],
   "activationEvents": [
@@ -99,6 +103,11 @@
     "typescript": "^4.8.4"
   },
   "dependencies": {
-    "doc-detective": "^1.2.3"
-  }
+    "doc-detective": "^1.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hawkeyexl/doc-detective-vsc.git"
+  },
+  "homepage": "https://github.com/hawkeyexl/doc-detective-vsc/blob/main/README.md"
 }

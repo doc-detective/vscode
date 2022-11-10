@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
-const doc = require("../doc-detective");
+const doc = require("doc-detective");
 const path = require("path");
 const fs = require("fs");
 
@@ -46,6 +46,20 @@ function activate(context) {
     }
   );
   context.subscriptions.push(coverageSingle);
+  let suggestAll = vscode.commands.registerCommand("doc-detective.suggest", () => {
+    let config = setConfig(context);
+    suggest(config);
+  });
+  context.subscriptions.push(suggestAll);
+  let suggestSingle = vscode.commands.registerCommand(
+    "doc-detective.suggest-single",
+    () => {
+      let config = setConfig(context);
+      config.input = vscode.window.activeTextEditor.document.fileName;
+      suggest(config);
+    }
+  );
+  context.subscriptions.push(suggestSingle);
 }
 
 // This method is called when your extension is deactivated
@@ -98,6 +112,28 @@ async function coverage(config) {
     });
 }
 
+async function suggest(config) {
+  await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: `Doc Detective: Suggesting tests.`,
+      cancellable: false,
+    },
+    async (progress, token) => {
+      doc.suggest(config);
+    }
+  );
+  vscode.window
+    .showInformationMessage(
+      `Doc Detective: Suggesting tests complete.`,
+      ...["See report"]
+    )
+    // .then((item) => {
+    //   if (item == "See report") {
+    //     vscode.window.showTextDocument(vscode.Uri.file(config.coverageOutput));
+    //   }
+    // });
+}
 function setConfig(context) {
   // Identify and prepare configuration
   let configPath;
