@@ -1,5 +1,9 @@
 # Doc Detective
 
+![Current version](https://img.shields.io/github/package-json/v/doc-detective/doc-detective-vsc?color=orange)
+[![Visual Studio Marketplace Shield](https://img.shields.io/visual-studio-marketplace/v/DocDetective.doc-detective?color=blue&label=visual%20studio%20marketplace)](https://marketplace.visualstudio.com/items?itemName=DocDetective.doc-detective)
+[![Discord Shield](https://discordapp.com/api/guilds/1066417654899937453/widget.png?style=shield)](https://discord.gg/mSCCRAhH)
+
 This extension brings [Doc Detective](https://github.com/hawkeyexl/doc-detective) to Visual Studio Code! Run tests and analyze content test coverage without having to leave your source files.
 
 ## Features
