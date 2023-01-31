@@ -6,7 +6,7 @@ name: Publish extension
 on:
   release:
     types: [created]
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   build:
