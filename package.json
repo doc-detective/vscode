@@ -4,7 +4,7 @@
   "publisher": "hawkeyexl",
   "description": "The documentation testing framework.",
   "version": "0.0.2",
-  "icon": "https://github.com/hawkeyexl/doc-detective-vsc/blob/main/icon.png",
+  "icon": "https://github.com/doc-detective/doc-detective-vsc/blob/main/icon.png",
   "preview": true,
   "engines": {
     "vscode": "^1.72.0"
