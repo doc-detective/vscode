@@ -57,7 +57,6 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
   }
 
   private getHtmlForWebview(jsonObj: any): string {
-    const pretty = JSON.stringify(jsonObj, null, 2);
     return `<!DOCTYPE html>
       <html lang="en">
       <head>
@@ -66,12 +65,57 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
         <title>Doc Detective Results</title>
         <style>
           body { font-family: monospace; margin: 0; padding: 0.5em; background: #1e1e1e; color: #d4d4d4; }
-          pre { white-space: pre-wrap; word-break: break-all; }
+          .collapsible { cursor: pointer; }
+          .content { display: block; margin-left: 1em; }
+          li:not(.active) > .content { display: none; }
+          .key { color: #9cdcfe; }
+          .string { color: #ce9178; }
+          .number { color: #b5cea8; }
+          .boolean { color: #569cd6; }
+          .null { color: #d4d4d4; }
+          ul { list-style-type: none; margin: 0; padding: 0; }
         </style>
       </head>
       <body>
-        <pre id="json">${pretty}</pre>
+        <div id="json"></div>
         <script>
+          function renderJSON(obj, isRoot = false) {
+            if (typeof obj !== 'object' || obj === null) {
+              if (typeof obj === 'string') return '<span class="string">"' + obj + '"</span>';
+              if (typeof obj === 'number') return '<span class="number">' + obj + '</span>';
+              if (typeof obj === 'boolean') return '<span class="boolean">' + obj + '</span>';
+              if (obj === null) return '<span class="null">null</span>';
+              return obj;
+            }
+            let html = '<ul>';
+            for (const key in obj) {
+              const value = obj[key];
+              if (typeof value === 'object' && value !== null) {
+                // By default, all nodes are expanded (active)
+                html += '<li class="active"><span class="collapsible">▼ <span class="key">' + key + '</span>: </span><div class="content">' + renderJSON(value) + '</div></li>';
+              } else {
+                html += '<li><span class="key">' + key + '</span>: ' + renderJSON(value) + '</li>';
+              }
+            }
+            html += '</ul>';
+            return html;
+          }
+          document.getElementById('json').innerHTML = renderJSON(${JSON.stringify(jsonObj)}, true);
+          document.querySelectorAll('.collapsible').forEach(function(el) {
+            el.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const parent = el.parentElement;
+              parent.classList.toggle('active');
+              // Update only the arrow, not the key
+              const arrow = el.childNodes[0];
+              if (arrow && arrow.nodeType === Node.TEXT_NODE) {
+                arrow.textContent = parent.classList.contains('active') ? '▼ ' : '▶ ';
+              } else {
+                // fallback: update whole text
+                el.textContent = parent.classList.contains('active') ? '▼ ' + el.textContent.slice(2) : '▶ ' + el.textContent.slice(2);
+              }
+            });
+          });
           const vscode = acquireVsCodeApi();
         </script>
       </body>
