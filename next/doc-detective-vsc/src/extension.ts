@@ -46,16 +46,62 @@ class OpenFilesTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
       const uniquePaths = Array.from(new Set(filePaths));
       return uniquePaths.map(fp => new OpenFileItem(fp));
     } else if (element instanceof OpenFileItem) {
-      // Children: detected tests for this file
+      // Children: detected test suites for this file
       try {
-        const tests: any = await detectTests({ input: element.filePath });
-        outputChannel.appendLine(`[${element.filePath}] Detected tests: ${JSON.stringify(tests, null, 2)}`);
-        if (Array.isArray(tests)) {
-          return tests.map((test: any) => new TestItem(test.name || String(test), element.filePath));
+        const suites: any[] = await detectTests({ config: { input: element.filePath } });
+        outputChannel.appendLine(`[${element.filePath}] Detected tests: ${JSON.stringify(suites, null, 2)}`);
+        if (Array.isArray(suites)) {
+          return suites.map(suite => {
+            const suiteItem = new vscode.TreeItem(
+              suite.description || suite.specId || 'Suite',
+              vscode.TreeItemCollapsibleState.Collapsed
+            );
+            suiteItem.tooltip = `Suite: ${suite.description || suite.specId}`;
+            suiteItem.description = suite.specId;
+            suiteItem.iconPath = new vscode.ThemeIcon('folder-library');
+            (suiteItem as any).__suite = suite;
+            (suiteItem as any).__parentFile = element.filePath;
+            return suiteItem;
+          });
         }
       } catch (e) {
         outputChannel.appendLine(`[${element.filePath}] Error detecting tests: ${e}`);
         return [new vscode.TreeItem('Error detecting tests')];
+      }
+      return [];
+    } else if ((element as any).__suite) {
+      // Children: tests within a suite
+      const suite = (element as any).__suite;
+      const parentFile = (element as any).__parentFile;
+      if (Array.isArray(suite.tests)) {
+        return suite.tests.map((test: any) => {
+          const testItem = new vscode.TreeItem(
+            test.description || test.testId || 'Test',
+            vscode.TreeItemCollapsibleState.Collapsed
+          );
+          testItem.tooltip = `Test: ${test.description || test.testId}`;
+          testItem.description = test.testId;
+          testItem.iconPath = new vscode.ThemeIcon('beaker');
+          (testItem as any).__test = test;
+          (testItem as any).__parentFile = parentFile;
+          return testItem;
+        });
+      }
+      return [];
+    } else if ((element as any).__test) {
+      // Children: steps within a test
+      const test = (element as any).__test;
+      if (Array.isArray(test.steps)) {
+        return test.steps.map((step: any, idx: number) => {
+          const label = Object.keys(step)[0];
+          const value = step[label];
+          const stepItem = new vscode.TreeItem(
+            `${idx + 1}. ${label}: ${value}`,
+            vscode.TreeItemCollapsibleState.None
+          );
+          stepItem.iconPath = new vscode.ThemeIcon('arrow-right');
+          return stepItem;
+        });
       }
       return [];
     }
