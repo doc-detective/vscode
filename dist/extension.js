@@ -70,8 +70,9 @@ class DocDetectiveWebviewViewProvider {
         });
     }
     async updateWebview() {
-        if (!this._view)
+        if (!this._view) {
             return;
+        }
         // Get open files
         const editors = vscode.window.visibleTextEditors;
         const filePaths = editors
@@ -93,6 +94,7 @@ class DocDetectiveWebviewViewProvider {
         this._view.webview.html = this.getHtmlForWebview(results);
     }
     getHtmlForWebview(jsonObj) {
+        const jsonString = JSON.stringify(jsonObj).replace(/</g, '\u003c');
         return `<!DOCTYPE html>
       <html lang="en">
       <head>
@@ -102,7 +104,7 @@ class DocDetectiveWebviewViewProvider {
         <style>
           body { font-family: monospace; margin: 0; padding: 0.5em; background: #1e1e1e; color: #d4d4d4; }
           .collapsible { cursor: pointer; }
-          .content { display: block; margin-left: 1em; }
+          .content { display: block; margin-left: 1.5em; }
           li:not(.active) > .content { display: none; }
           .key { color: #9cdcfe; }
           .string { color: #ce9178; }
@@ -110,42 +112,71 @@ class DocDetectiveWebviewViewProvider {
           .boolean { color: #569cd6; }
           .null { color: #d4d4d4; }
           ul { list-style-type: none; margin: 0; padding: 0; }
+          .bracket { color: #d4d4d4; }
+          .comma { color: #666; }
         </style>
       </head>
       <body>
         <div id="json"></div>
         <script>
-          function renderJSON(obj, isRoot = false) {
+          const jsonObj = JSON.parse('' + '${jsonString}'.replace(/\\u003c/g, '<'));
+          function escapeHTML(str) {
+            return str.replace(/[&<>]/g, function(tag) {
+              const chars = {'&':'&amp;','<':'&lt;','>':'&gt;'};
+              return chars[tag] || tag;
+            });
+          }
+          function renderJSON(obj, indent = 0, isLast = true) {
+            const INDENT = '  ';
+            const pad = (n) => INDENT.repeat(n);
             if (typeof obj !== 'object' || obj === null) {
-              if (typeof obj === 'string') return '<span class="string">"' + obj + '"</span>';
+              if (typeof obj === 'string') return '<span class="string">"' + escapeHTML(obj) + '"</span>';
               if (typeof obj === 'number') return '<span class="number">' + obj + '</span>';
               if (typeof obj === 'boolean') return '<span class="boolean">' + obj + '</span>';
               if (obj === null) return '<span class="null">null</span>';
               return obj;
             }
-            let html = '<ul>';
-            for (const key in obj) {
-              const value = obj[key];
-              if (typeof value === 'object' && value !== null) {
-                // By default, all nodes are expanded (active)
-                html += '<li class="active"><span class="collapsible">▼ <span class="key">' + key + '</span>: </span><div class="content">' + renderJSON(value) + '</div></li>';
-              } else {
-                html += '<li><span class="key">' + key + '</span>: ' + renderJSON(value) + '</li>';
+            if (Array.isArray(obj)) {
+              if (obj.length === 0) return '<span class="bracket">[ ]</span>';
+              let html = '<span class="bracket">[</span><ul>';
+              for (let i = 0; i < obj.length; i++) {
+                const value = obj[i];
+                const last = i === obj.length - 1;
+                if (typeof value === 'object' && value !== null) {
+                  html += '<li class="active"><span class="collapsible">▼</span><div class="content">' + renderJSON(value, indent + 1, last) + '</div>' + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                } else {
+                  html += '<li>' + pad(indent + 1) + renderJSON(value, indent + 1, last) + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                }
               }
+              html += '</ul>' + pad(indent) + '<span class="bracket">]</span>';
+              return html;
+            } else {
+              const keys = Object.keys(obj);
+              if (keys.length === 0) return '<span class="bracket">{ }</span>';
+              let html = '<span class="bracket">{</span><ul>';
+              keys.forEach(function(key, idx) {
+                const value = obj[key];
+                const last = idx === keys.length - 1;
+                if (typeof value === 'object' && value !== null) {
+                  html += '<li class="active"><span class="collapsible">▼ <span class="key">' + escapeHTML(key) + '</span>: </span><div class="content">' + renderJSON(value, indent + 1, last) + '</div>' + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                } else {
+                  html += '<li>' + pad(indent + 1) + '<span class="key">' + escapeHTML(key) + '</span>: ' + renderJSON(value, indent + 1, last) + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                }
+              });
+              html += '</ul>' + pad(indent) + '<span class="bracket">}</span>';
+              return html;
             }
-            html += '</ul>';
-            return html;
           }
-          document.getElementById('json').innerHTML = renderJSON(${JSON.stringify(jsonObj)}, true);
+          document.getElementById('json').innerHTML = renderJSON(jsonObj, 0, true);
           document.querySelectorAll('.collapsible').forEach(function(el) {
             el.addEventListener('click', function(e) {
               e.stopPropagation();
-              const parent = el.parentElement;
+              var parent = el.parentElement;
               parent.classList.toggle('active');
               // Update only the arrow, not the key
-              const arrow = el.childNodes[0];
+              var arrow = el.childNodes[0];
               if (arrow && arrow.nodeType === Node.TEXT_NODE) {
-                arrow.textContent = parent.classList.contains('active') ? '▼ ' : '▶ ';
+                arrow.textContent = parent.classList.contains('active') ? '▼' : '▶';
               } else {
                 // fallback: update whole text
                 el.textContent = parent.classList.contains('active') ? '▼ ' + el.textContent.slice(2) : '▶ ' + el.textContent.slice(2);
