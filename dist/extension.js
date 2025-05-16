@@ -103,11 +103,9 @@ class DocDetectiveWebviewViewProvider {
         <style>
           body { font-family: monospace; margin: 0; padding: 0.5em; background: #1e1e1e; color: #d4d4d4; }
           pre { white-space: pre-wrap; word-break: break-all; }
-          button { margin-bottom: 1em; }
         </style>
       </head>
       <body>
-        <button onclick="vscode.postMessage({ command: 'refresh' })">Refresh</button>
         <pre id="json">${pretty}</pre>
         <script>
           const vscode = acquireVsCodeApi();
@@ -129,6 +127,8 @@ function activate(context) {
     context.subscriptions.push(vscode.window.registerWebviewViewProvider('docDetectiveView', provider));
     // Refresh the webview when visible editors change
     context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => provider.updateWebview()));
+    // Hot-reload the webview when the active editor changes (switching tabs)
+    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => provider.updateWebview()));
     context.subscriptions.push(outputChannel);
 }
 // This method is called when your extension is deactivated
