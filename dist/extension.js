@@ -47,132 +47,88 @@ const vscode = __importStar(__webpack_require__(1));
 const { detectTests } = __webpack_require__(2);
 // Create an output channel for logging
 const outputChannel = vscode.window.createOutputChannel('Doc Detective');
-// Tree item for open files
-class OpenFileItem extends vscode.TreeItem {
-    filePath;
-    constructor(filePath) {
-        super(filePath, vscode.TreeItemCollapsibleState.Collapsed);
-        this.filePath = filePath;
-        this.tooltip = filePath;
-        this.description = filePath;
-        this.resourceUri = vscode.Uri.file(filePath);
-        this.iconPath = vscode.ThemeIcon.File;
+// WebviewViewProvider for Doc Detective
+class DocDetectiveWebviewViewProvider {
+    context;
+    static viewType = 'docDetectiveView';
+    _view;
+    constructor(context) {
+        this.context = context;
     }
-}
-// Tree item for test
-class TestItem extends vscode.TreeItem {
-    label;
-    parentFile;
-    constructor(label, parentFile) {
-        super(label, vscode.TreeItemCollapsibleState.None);
-        this.label = label;
-        this.parentFile = parentFile;
-        this.tooltip = `${label} (from ${parentFile})`;
-        this.description = label;
-        this.iconPath = new vscode.ThemeIcon('beaker');
+    async resolveWebviewView(webviewView, context, _token) {
+        this._view = webviewView;
+        webviewView.webview.options = {
+            enableScripts: true
+        };
+        // Initial render
+        await this.updateWebview();
+        // Listen for messages from the webview (if needed)
+        webviewView.webview.onDidReceiveMessage(async (message) => {
+            if (message.command === 'refresh') {
+                await this.updateWebview();
+            }
+        });
     }
-}
-// TreeDataProvider for open files and their detected tests
-class OpenFilesTreeDataProvider {
-    _onDidChangeTreeData = new vscode.EventEmitter();
-    onDidChangeTreeData = this._onDidChangeTreeData.event;
-    getTreeItem(element) {
-        return element;
-    }
-    async getChildren(element) {
-        if (!element) {
-            // Root: list open files
-            const editors = vscode.window.visibleTextEditors;
-            const filePaths = editors
-                .filter(e => e.document.uri.scheme === 'file')
-                .map(e => e.document.uri.fsPath);
-            const uniquePaths = Array.from(new Set(filePaths));
-            return uniquePaths.map(fp => new OpenFileItem(fp));
-        }
-        else if (element instanceof OpenFileItem) {
-            // Children: detected test suites for this file
+    async updateWebview() {
+        if (!this._view)
+            return;
+        // Get open files
+        const editors = vscode.window.visibleTextEditors;
+        const filePaths = editors
+            .filter(e => e.document.uri.scheme === 'file')
+            .map(e => e.document.uri.fsPath);
+        const uniquePaths = Array.from(new Set(filePaths));
+        // For each file, detect tests
+        const results = {};
+        for (const file of uniquePaths) {
             try {
-                const suites = await detectTests({ config: { input: element.filePath } });
-                outputChannel.appendLine(`[${element.filePath}] Detected tests: ${JSON.stringify(suites, null, 2)}`);
-                if (Array.isArray(suites)) {
-                    return suites.map(suite => {
-                        const suiteItem = new vscode.TreeItem(suite.description || suite.specId || 'Suite', vscode.TreeItemCollapsibleState.Collapsed);
-                        suiteItem.tooltip = `Suite: ${suite.description || suite.specId}`;
-                        suiteItem.description = suite.specId;
-                        suiteItem.iconPath = new vscode.ThemeIcon('folder-library');
-                        suiteItem.__suite = suite;
-                        suiteItem.__parentFile = element.filePath;
-                        return suiteItem;
-                    });
-                }
+                const suites = await detectTests({ config: { input: file } });
+                results[file] = suites;
             }
             catch (e) {
-                outputChannel.appendLine(`[${element.filePath}] Error detecting tests: ${e}`);
-                return [new vscode.TreeItem('Error detecting tests')];
+                results[file] = { error: String(e) };
             }
-            return [];
         }
-        else if (element.__suite) {
-            // Children: tests within a suite
-            const suite = element.__suite;
-            const parentFile = element.__parentFile;
-            if (Array.isArray(suite.tests)) {
-                return suite.tests.map((test) => {
-                    const testItem = new vscode.TreeItem(test.description || test.testId || 'Test', vscode.TreeItemCollapsibleState.Collapsed);
-                    testItem.tooltip = `Test: ${test.description || test.testId}`;
-                    testItem.description = test.testId;
-                    testItem.iconPath = new vscode.ThemeIcon('beaker');
-                    testItem.__test = test;
-                    testItem.__parentFile = parentFile;
-                    return testItem;
-                });
-            }
-            return [];
-        }
-        else if (element.__test) {
-            // Children: steps within a test
-            const test = element.__test;
-            if (Array.isArray(test.steps)) {
-                return test.steps.map((step, idx) => {
-                    const label = Object.keys(step)[0];
-                    const value = step[label];
-                    const stepItem = new vscode.TreeItem(`${idx + 1}. ${label}: ${value}`, vscode.TreeItemCollapsibleState.None);
-                    stepItem.iconPath = new vscode.ThemeIcon('arrow-right');
-                    return stepItem;
-                });
-            }
-            return [];
-        }
-        return [];
+        // Render JSON in webview
+        this._view.webview.html = this.getHtmlForWebview(results);
     }
-    refresh() {
-        this._onDidChangeTreeData.fire();
+    getHtmlForWebview(jsonObj) {
+        const pretty = JSON.stringify(jsonObj, null, 2);
+        return `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Doc Detective Results</title>
+        <style>
+          body { font-family: monospace; margin: 0; padding: 0.5em; background: #1e1e1e; color: #d4d4d4; }
+          pre { white-space: pre-wrap; word-break: break-all; }
+          button { margin-bottom: 1em; }
+        </style>
+      </head>
+      <body>
+        <button onclick="vscode.postMessage({ command: 'refresh' })">Refresh</button>
+        <pre id="json">${pretty}</pre>
+        <script>
+          const vscode = acquireVsCodeApi();
+        </script>
+      </body>
+      </html>`;
     }
 }
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
     console.log('Congratulations, your extension "doc-detective-vsc" is now active!');
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
     const disposable = vscode.commands.registerCommand('doc-detective-vsc.helloWorld', () => {
-        // The code you place here will be executed every time your command is executed
-        // Display a message box to the user
         vscode.window.showInformationMessage('Hello World from doc-detective-vsc!');
     });
     context.subscriptions.push(disposable);
-    // Register the TreeDataProvider for open files
-    const openFilesProvider = new OpenFilesTreeDataProvider();
-    context.subscriptions.push(vscode.window.registerTreeDataProvider('docDetectiveView', openFilesProvider));
-    // Refresh the tree when visible editors change
-    context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => openFilesProvider.refresh()));
-    // On activation, send the current file path if any
-    if (vscode.window.activeTextEditor) {
-        openFilesProvider.refresh();
-    }
+    // Register the WebviewViewProvider for the sidebar
+    const provider = new DocDetectiveWebviewViewProvider(context);
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider('docDetectiveView', provider));
+    // Refresh the webview when visible editors change
+    context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => provider.updateWebview()));
     context.subscriptions.push(outputChannel);
 }
 // This method is called when your extension is deactivated

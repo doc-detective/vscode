@@ -33,7 +33,8 @@
       "docDetectiveSidebar": [
         {
           "id": "docDetectiveView",
-          "name": "Doc Detective Side Panel"
+          "name": "Doc Detective Side Panel",
+          "type": "webview"
         }
       ]
     }
