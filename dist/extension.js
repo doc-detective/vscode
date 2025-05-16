@@ -166,7 +166,7 @@ function activate(context) {
     context.subscriptions.push(disposable);
     // Register the TreeDataProvider for open files
     const openFilesProvider = new OpenFilesTreeDataProvider();
-    context.subscriptions.push(vscode.window.registerTreeDataProvider('bareBonesView', openFilesProvider));
+    context.subscriptions.push(vscode.window.registerTreeDataProvider('docDetectiveView', openFilesProvider));
     // Refresh the tree when visible editors change
     context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => openFilesProvider.refresh()));
     // On activation, send the current file path if any

@@ -23,17 +23,17 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "bareBonesSidebar",
-          "title": "Bare Bones Panel",
+          "id": "docDetectiveSidebar",
+          "title": "Doc Detective Panel",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "bareBonesSidebar": [
+      "docDetectiveSidebar": [
         {
-          "id": "bareBonesView",
-          "name": "Bare Bones Side Panel"
+          "id": "docDetectiveView",
+          "name": "Doc Detective Side Panel"
         }
       ]
     }

@@ -117,25 +117,25 @@ class OpenFilesTreeDataProvider implements vscode.TreeDataProvider<vscode.TreeIt
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "doc-detective-vsc" is now active!');
+  // Use the console to output diagnostic information (console.log) and errors (console.error)
+  // This line of code will only be executed once when your extension is activated
+  console.log('Congratulations, your extension "doc-detective-vsc" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('doc-detective-vsc.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from doc-detective-vsc!');
-	});
+  // The command has been defined in the package.json file
+  // Now provide the implementation of the command with registerCommand
+  // The commandId parameter must match the command field in package.json
+  const disposable = vscode.commands.registerCommand('doc-detective-vsc.helloWorld', () => {
+    // The code you place here will be executed every time your command is executed
+    // Display a message box to the user
+    vscode.window.showInformationMessage('Hello World from doc-detective-vsc!');
+  });
 
-	context.subscriptions.push(disposable);
+  context.subscriptions.push(disposable);
 
   // Register the TreeDataProvider for open files
   const openFilesProvider = new OpenFilesTreeDataProvider();
   context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('bareBonesView', openFilesProvider)
+    vscode.window.registerTreeDataProvider('docDetectiveView', openFilesProvider)
   );
 
   // Refresh the tree when visible editors change
