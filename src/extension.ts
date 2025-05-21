@@ -75,8 +75,9 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
           .boolean { color: #569cd6; }
           .null { color: #d4d4d4; }
           ul { list-style-type: none; margin: 0; padding: 0; }
-          .bracket { color: #d4d4d4; }
-          .comma { color: #666; }
+          .yaml-indent { color: #555; }
+          .yaml-dash { color: #666; }
+          .toggle { color: #569cd6; }
         </style>
       </head>
       <body>
@@ -89,60 +90,77 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
               return chars[tag] || tag;
             });
           }
-          function renderJSON(obj, indent = 0, isLast = true) {
+          function renderYAML(obj, indent = 0, isArrayItem = false) {
             const INDENT = '  ';
             const pad = (n) => INDENT.repeat(n);
+            
             if (typeof obj !== 'object' || obj === null) {
-              if (typeof obj === 'string') return '<span class="string">"' + escapeHTML(obj) + '"</span>';
+              if (typeof obj === 'string') return '<span class="string">' + escapeHTML(obj) + '</span>';
               if (typeof obj === 'number') return '<span class="number">' + obj + '</span>';
               if (typeof obj === 'boolean') return '<span class="boolean">' + obj + '</span>';
               if (obj === null) return '<span class="null">null</span>';
               return obj;
             }
+            
             if (Array.isArray(obj)) {
-              if (obj.length === 0) return '<span class="bracket">[ ]</span>';
-              let html = '<span class="bracket">[</span><ul>';
+              if (obj.length === 0) return '[]';
+              let html = '<ul>';
+              
               for (let i = 0; i < obj.length; i++) {
                 const value = obj[i];
-                const last = i === obj.length - 1;
+                const indentSpan = '<span class="yaml-indent">' + pad(indent) + '</span>';
+                
                 if (typeof value === 'object' && value !== null) {
-                  html += '<li class="active"><span class="collapsible">▼</span><div class="content">' + renderJSON(value, indent + 1, last) + '</div>' + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                  html += '<li class="active">' + 
+                          indentSpan + 
+                          '<span class="collapsible"><span class="toggle">▼</span> <span class="yaml-dash">-</span></span>' +
+                          '<div class="content">' + renderYAML(value, indent + 1, true) + '</div>' +
+                          '</li>';
                 } else {
-                  html += '<li>' + pad(indent + 1) + renderJSON(value, indent + 1, last) + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                  html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
+                          renderYAML(value, indent + 1, true) + '</li>';
                 }
               }
-              html += '</ul>' + pad(indent) + '<span class="bracket">]</span>';
+              
+              html += '</ul>';
               return html;
             } else {
               const keys = Object.keys(obj);
-              if (keys.length === 0) return '<span class="bracket">{ }</span>';
-              let html = '<span class="bracket">{</span><ul>';
-              keys.forEach(function(key, idx) {
+              if (keys.length === 0) return '{}';
+              
+              let html = '<ul>';
+              keys.forEach(function(key) {
                 const value = obj[key];
-                const last = idx === keys.length - 1;
+                const indentation = '<span class="yaml-indent">' + pad(indent) + '</span>';
+                
                 if (typeof value === 'object' && value !== null) {
-                  html += '<li class="active"><span class="collapsible">▼ <span class="key">' + escapeHTML(key) + '</span>: </span><div class="content">' + renderJSON(value, indent + 1, last) + '</div>' + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                  html += '<li class="active">' + 
+                          indentation +
+                          '<span class="collapsible"><span class="toggle">▼</span> <span class="key">' + escapeHTML(key) + ':</span></span>' +
+                          '<div class="content">' + renderYAML(value, indent + 1) + '</div>' +
+                          '</li>';
                 } else {
-                  html += '<li>' + pad(indent + 1) + '<span class="key">' + escapeHTML(key) + '</span>: ' + renderJSON(value, indent + 1, last) + (!last ? '<span class="comma">,</span>' : '') + '</li>';
+                  html += '<li>' + indentation + '<span class="key">' + 
+                          escapeHTML(key) + ':</span> ' + renderYAML(value, indent + 1) + '</li>';
                 }
               });
-              html += '</ul>' + pad(indent) + '<span class="bracket">}</span>';
+              
+              html += '</ul>';
               return html;
             }
           }
-          document.getElementById('json').innerHTML = renderJSON(jsonObj, 0, true);
+          
+          document.getElementById('json').innerHTML = renderYAML(jsonObj, 0);
           document.querySelectorAll('.collapsible').forEach(function(el) {
             el.addEventListener('click', function(e) {
               e.stopPropagation();
               var parent = el.parentElement;
               parent.classList.toggle('active');
-              // Update only the arrow, not the key
-              var arrow = el.childNodes[0];
-              if (arrow && arrow.nodeType === Node.TEXT_NODE) {
-                arrow.textContent = parent.classList.contains('active') ? '▼' : '▶';
-              } else {
-                // fallback: update whole text
-                el.textContent = parent.classList.contains('active') ? '▼ ' + el.textContent.slice(2) : '▶ ' + el.textContent.slice(2);
+              
+              // Update the toggle arrow
+              const toggleEl = el.querySelector('.toggle');
+              if (toggleEl) {
+                toggleEl.textContent = parent.classList.contains('active') ? '▼' : '▶';
               }
             });
           });
