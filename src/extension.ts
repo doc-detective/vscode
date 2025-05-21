@@ -172,18 +172,13 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
             border-left: 1px solid var(--indent-color);
           }
           
-          /* Hover effects */
-          .collapsible:hover {
-            opacity: 0.8;
+          /* Basic styling */
+          .collapsible {
+            transition: opacity 0.1s;
           }
           
           li {
             padding: 1px 0;
-          }
-          
-          li:hover {
-            background-color: var(--vscode-editor-hoverHighlightBackground, rgba(125, 125, 125, 0.07));
-            border-radius: 2px;
           }
         </style>
       </head>
