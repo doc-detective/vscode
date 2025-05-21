@@ -14,6 +14,11 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
+  // Check if the view is available
+  public hasView(): boolean {
+    return !!this._view;
+  }
+
   public async resolveWebviewView(
     webviewView: vscode.WebviewView,
     context: vscode.WebviewViewResolveContext,
@@ -21,8 +26,27 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
   ) {
     this._view = webviewView;
     webviewView.webview.options = {
-      enableScripts: true
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')]
     };
+    
+    // Set content security policy for the webview
+    // Allow inline styles and scripts, as well as VS Code's webview CSS
+    webviewView.webview.html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline';">
+        <title>Loading Doc Detective...</title>
+      </head>
+      <body>
+        <div>Loading Doc Detective...</div>
+      </body>
+      </html>
+    `;
+    
     // Initial render
     await this.updateWebview();
 
@@ -63,22 +87,104 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline';">
         <title>Doc Detective Results</title>
         <style>
-          body { font-family: monospace; margin: 0; padding: 0.5em; background: #1e1e1e; color: #d4d4d4; }
+          :root {
+            --background: var(--vscode-editor-background);
+            --foreground: var(--vscode-editor-foreground);
+            --key-color: var(--vscode-symbolIcon-propertyForeground, var(--vscode-debugTokenExpression-name, #9cdcfe));
+            --string-color: var(--vscode-debugTokenExpression-string, #ce9178);
+            --number-color: var(--vscode-debugTokenExpression-number, #b5cea8);
+            --boolean-color: var(--vscode-debugTokenExpression-boolean, #569cd6);
+            --indent-color: var(--vscode-editorIndentGuide-background, #555);
+            --dash-color: var(--vscode-editorIndentGuide-activeBackground, #666);
+            --toggle-color: var(--vscode-editorLink-activeForeground, #569cd6);
+          }
+          
+          body { 
+            font-family: var(--vscode-editor-font-family, monospace); 
+            margin: 0; 
+            padding: 0.5em; 
+            background: var(--background); 
+            color: var(--foreground);
+            font-size: var(--vscode-editor-font-size, 14px);
+            line-height: 1.5;
+          }
+          
           .collapsible { cursor: pointer; }
-          .content { display: block; margin-left: 1.5em; }
-          li:not(.active) > .content { display: none; }
-          .key { color: #9cdcfe; }
-          .string { color: #ce9178; }
-          .number { color: #b5cea8; }
-          .boolean { color: #569cd6; }
-          .null { color: #d4d4d4; }
-          ul { list-style-type: none; margin: 0; padding: 0; }
-          .yaml-indent { color: #555; }
-          .yaml-dash { color: #666; }
-          .toggle { color: #569cd6; }
-          .simple-obj { margin-left: 1.5em; }
+          
+          .content { 
+            display: block; 
+            margin-left: 1.5em; 
+          }
+          
+          li:not(.active) > .content { 
+            display: none; 
+          }
+          
+          .key { 
+            color: var(--key-color); 
+            font-weight: var(--vscode-font-weight, normal);
+          }
+          
+          .string { 
+            color: var(--string-color); 
+          }
+          
+          .number { 
+            color: var(--number-color); 
+          }
+          
+          .boolean { 
+            color: var(--boolean-color); 
+          }
+          
+          .null { 
+            color: var(--foreground);
+            opacity: 0.7; 
+          }
+          
+          ul { 
+            list-style-type: none; 
+            margin: 0; 
+            padding: 0; 
+          }
+          
+          .yaml-indent { 
+            color: var(--indent-color); 
+          }
+          
+          .yaml-dash { 
+            color: var(--dash-color); 
+          }
+          
+          .toggle { 
+            color: var(--toggle-color);
+            display: inline-block;
+            width: 1em;
+            text-align: center;
+          }
+          
+          .simple-obj { 
+            margin-left: 1.5em;
+            padding-left: 0.5em;
+            border-left: 1px solid var(--indent-color);
+          }
+          
+          /* Hover effects */
+          .collapsible:hover {
+            opacity: 0.8;
+          }
+          
+          li {
+            padding: 1px 0;
+          }
+          
+          li:hover {
+            background-color: var(--vscode-editor-hoverHighlightBackground, rgba(125, 125, 125, 0.07));
+            border-radius: 2px;
+          }
         </style>
       </head>
       <body>
@@ -230,6 +336,16 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
               }
             });
           });
+
+          // Handle theme changes
+          window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.type === 'vscode-theme-updated') {
+              // No need to do anything special - CSS vars will update automatically
+              console.log('Theme updated');
+            }
+          });
+
           const vscode = acquireVsCodeApi();
         </script>
       </body>
@@ -263,6 +379,15 @@ export function activate(context: vscode.ExtensionContext) {
   // Hot-reload the webview when the active editor changes (switching tabs)
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => provider.updateWebview())
+  );
+
+  // Update when the color theme changes
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveColorTheme(() => {
+      if (provider.hasView()) {
+        provider.updateWebview();
+      }
+    })
   );
 
   context.subscriptions.push(outputChannel);
