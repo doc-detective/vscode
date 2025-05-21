@@ -77,7 +77,8 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
           ul { list-style-type: none; margin: 0; padding: 0; }
           .yaml-indent { color: #555; }
           .yaml-dash { color: #666; }
-          .toggle { color: #569cd6; }
+          .toggle { color: #569cd6; margin-right: 3px; }
+          .simple-obj { margin-left: 1em; }
         </style>
       </head>
       <body>
@@ -90,6 +91,18 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
               return chars[tag] || tag;
             });
           }
+          
+          // Helper function to check if an object has nested objects/arrays
+          function hasNestedObjects(obj) {
+            if (typeof obj !== 'object' || obj === null) return false;
+            
+            if (Array.isArray(obj)) {
+              return obj.some(item => typeof item === 'object' && item !== null);
+            } else {
+              return Object.values(obj).some(val => typeof val === 'object' && val !== null);
+            }
+          }
+          
           function renderYAML(obj, indent = 0, isArrayItem = false) {
             const INDENT = '  ';
             const pad = (n) => INDENT.repeat(n);
@@ -111,14 +124,57 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
                 const indentSpan = '<span class="yaml-indent">' + pad(indent) + '</span>';
                 
                 if (typeof value === 'object' && value !== null) {
-                  html += '<li class="active">' + 
-                          indentSpan + 
-                          '<span class="collapsible"><span class="toggle">▼</span> <span class="yaml-dash">-</span></span>' +
-                          '<div class="content">' + renderYAML(value, indent + 1, true) + '</div>' +
-                          '</li>';
+                  const hasNested = hasNestedObjects(value);
+                  
+                  if (hasNested) {
+                    // Object with nested objects gets a toggle
+                    html += '<li class="active">' + 
+                            indentSpan + 
+                            '<span class="collapsible"><span class="toggle">▼</span> <span class="yaml-dash">-</span>';
+                    
+                    if (!Array.isArray(value)) {
+                      // If it's an object with a single key, we can show it on the same line
+                      const keys = Object.keys(value);
+                      if (keys.length === 1 && typeof value[keys[0]] !== 'object') {
+                        html += ' <span class="key">' + escapeHTML(keys[0]) + ':</span> ' + 
+                                renderYAML(value[keys[0]], 0);
+                        html += '</span><div class="content"></div>';
+                      } else {
+                        html += '</span><div class="content">' + renderYAML(value, indent + 1, true) + '</div>';
+                      }
+                    } else {
+                      html += '</span><div class="content">' + renderYAML(value, indent + 1, true) + '</div>';
+                    }
+                    html += '</li>';
+                  } else if (!Array.isArray(value)) {
+                    // Simple object (no nested objects) - display first key-value on same line as dash
+                    const keys = Object.keys(value);
+                    html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ';
+                    
+                    if (keys.length > 0) {
+                      html += '<span class="key">' + escapeHTML(keys[0]) + ':</span> ' + 
+                              renderYAML(value[keys[0]], 0);
+                      
+                      // Add remaining keys with extra indent if there are any
+                      if (keys.length > 1) {
+                        html += '<div class="simple-obj">';
+                        for (let k = 1; k < keys.length; k++) {
+                          html += '<div><span class="key">' + escapeHTML(keys[k]) + ':</span> ' + 
+                                  renderYAML(value[keys[k]], 0) + '</div>';
+                        }
+                        html += '</div>';
+                      }
+                    }
+                    html += '</li>';
+                  } else {
+                    // Empty array or array with primitives only
+                    html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
+                            renderYAML(value, 0, true) + '</li>';
+                  }
                 } else {
+                  // Simple value in array
                   html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
-                          renderYAML(value, indent + 1, true) + '</li>';
+                          renderYAML(value, 0, true) + '</li>';
                 }
               }
               
@@ -133,13 +189,19 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
                 const value = obj[key];
                 const indentation = '<span class="yaml-indent">' + pad(indent) + '</span>';
                 
-                if (typeof value === 'object' && value !== null) {
+                if (typeof value === 'object' && value !== null && hasNestedObjects(value)) {
+                  // Object with nested objects/arrays gets a toggle
                   html += '<li class="active">' + 
                           indentation +
                           '<span class="collapsible"><span class="toggle">▼</span> <span class="key">' + escapeHTML(key) + ':</span></span>' +
                           '<div class="content">' + renderYAML(value, indent + 1) + '</div>' +
                           '</li>';
+                } else if (typeof value === 'object' && value !== null) {
+                  // Object without nested objects (no toggle needed)
+                  html += '<li>' + indentation + '<span class="key">' + 
+                          escapeHTML(key) + ':</span> ' + renderYAML(value, indent + 1) + '</li>';
                 } else {
+                  // Simple key-value
                   html += '<li>' + indentation + '<span class="key">' + 
                           escapeHTML(key) + ':</span> ' + renderYAML(value, indent + 1) + '</li>';
                 }
