@@ -1,12 +1,17 @@
 {
-  "name": "doc-detective-vsc",
-  "displayName": "doc-detective-vsc",
-  "description": "Doc Detective analyzer with real-time updates when files are saved",
+  "name": "doc-detective",
+  "displayName": "Doc Detective",
+  "publisher": "DocDetective",
+  "description": "View Doc Detective tests for active files.",
   "version": "0.0.2",
+  "sponsor": {
+    "url": "https://github.com/sponsors/doc-detective"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
+    "Testing",
     "Other"
   ],
   "activationEvents": [],
@@ -71,10 +76,11 @@
       ]
     }
   },
-"repository": {
+  "repository": {
     "type": "git",
     "url": "https://github.com/doc-detective/vscode.git"
   },
+  "license": "AGPL-3.0-only",
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
