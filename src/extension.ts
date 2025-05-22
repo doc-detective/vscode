@@ -771,8 +771,8 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
 export function activate(context: vscode.ExtensionContext) {
   log('Activating Doc Detective extension...');
 
-  const disposable = vscode.commands.registerCommand('doc-detective-vsc.helloWorld', () => {
-    vscode.window.showInformationMessage('Hello World from doc-detective-vsc!');
+  const disposable = vscode.commands.registerCommand('doc-detective.helloWorld', () => {
+    vscode.window.showInformationMessage('Hello World from doc-detective!');
   });
   context.subscriptions.push(disposable);
 
@@ -830,14 +830,14 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // Add a command to manually refresh the webview
-  const refreshCommand = vscode.commands.registerCommand('doc-detective-vsc.refresh', () => {
+  const refreshCommand = vscode.commands.registerCommand('doc-detective.refresh', () => {
     log('Manual refresh requested');
     provider.updateWebview();
     vscode.window.showInformationMessage('Doc Detective panel refreshed');
   });
   context.subscriptions.push(refreshCommand);
     // Add a command to use simplified view
-  const simpleViewCommand = vscode.commands.registerCommand('doc-detective-vsc.simpleView', async () => {
+  const simpleViewCommand = vscode.commands.registerCommand('doc-detective.simpleView', async () => {
     log('Simple view requested');
     if (provider.hasView()) {
       try {

@@ -24,16 +24,16 @@
   "contributes": {
     "commands": [
       {
-        "command": "doc-detective-vsc.helloWorld",
+        "command": "doc-detective.helloWorld",
         "title": "Hello World"
       },
       {
-        "command": "doc-detective-vsc.refresh",
+        "command": "doc-detective.refresh",
         "title": "Refresh Doc Detective Panel",
         "icon": "$(refresh)"
       },
       {
-        "command": "doc-detective-vsc.simpleView",
+        "command": "doc-detective.simpleView",
         "title": "Use Simple View",
         "icon": "$(list-flat)"
       }
@@ -51,12 +51,12 @@
     "menus": {
       "view/title": [
         {
-          "command": "doc-detective-vsc.refresh",
+          "command": "doc-detective.refresh",
           "when": "view == docDetectiveView",
           "group": "navigation"
         },
         {
-          "command": "doc-detective-vsc.simpleView",
+          "command": "doc-detective.simpleView",
           "when": "view == docDetectiveView",
           "group": "navigation"
         }

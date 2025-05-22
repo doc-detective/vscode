@@ -40,7 +40,7 @@ Doc Detective has multiple components that work together:
 ## Learn More
 
 - [Doc Detective Documentation](https://doc-detective.com)
-- [GitHub Repository](https://github.com/doc-detective/doc-detective-vsc)
+- [GitHub Repository](https://github.com/doc-detective/vscode)
 - [Discord Community](https://discord.gg/2M7wXEThfF)
 
 ## Contributing
