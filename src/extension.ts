@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { promises as fsp } from 'fs';
 const { detectTests } = require('doc-detective-resolver');
 const yaml = require('js-yaml');
 
@@ -31,7 +32,7 @@ function log(message: string) {
 async function loadConfigFile(filePath: string): Promise<any> {
   try {
     log(`Loading config file: ${filePath}`);
-    const content = fs.readFileSync(filePath, 'utf8');
+    const content = await fsp.readFile(filePath, 'utf8');
     
     if (filePath.endsWith('.json')) {
       return JSON.parse(content);
@@ -42,6 +43,21 @@ async function loadConfigFile(filePath: string): Promise<any> {
   } catch (error) {
     log(`Error loading config file: ${error}`);
     return null;
+  }
+}
+
+/**
+ * Asynchronously checks if a file exists and is accessible.
+ *
+ * @param filePath - The path to the file to check.
+ * @returns True if the file exists and is accessible, false otherwise.
+ */
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fsp.access(filePath);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -61,14 +77,14 @@ async function findConfigFile(workspaceFolders: readonly vscode.WorkspaceFolder[
   if (configPath && configPath.trim() !== '') {
     // If absolute path, use it directly
     if (path.isAbsolute(configPath)) {
-      return fs.existsSync(configPath) ? configPath : null;
+      return (await fileExists(configPath)) ? configPath : null;
     }
     
     // Relative path - try to resolve from each workspace folder
     if (workspaceFolders && workspaceFolders.length > 0) {
       for (const folder of workspaceFolders) {
         const fullPath = path.join(folder.uri.fsPath, configPath);
-        if (fs.existsSync(fullPath)) {
+        if (await fileExists(fullPath)) {
           return fullPath;
         }
       }
@@ -89,7 +105,7 @@ async function findConfigFile(workspaceFolders: readonly vscode.WorkspaceFolder[
       ];
       
       for (const file of possibleFiles) {
-        if (fs.existsSync(file)) {
+        if (await fileExists(file)) {
           log(`Found config file: ${file}`);
           return file;
         }

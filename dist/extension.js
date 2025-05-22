@@ -45,7 +45,7 @@ exports.deactivate = deactivate;
 // Import the module and reference it with the alias vscode in your code below
 const vscode = __importStar(__webpack_require__(1));
 const path = __importStar(__webpack_require__(2));
-const fs = __importStar(__webpack_require__(3));
+const fs_1 = __webpack_require__(3);
 const { detectTests } = __webpack_require__(4);
 const yaml = __webpack_require__(379);
 // Create an output channel for logging
@@ -71,7 +71,7 @@ function log(message) {
 async function loadConfigFile(filePath) {
     try {
         log(`Loading config file: ${filePath}`);
-        const content = fs.readFileSync(filePath, 'utf8');
+        const content = await fs_1.promises.readFile(filePath, 'utf8');
         if (filePath.endsWith('.json')) {
             return JSON.parse(content);
         }
@@ -83,6 +83,21 @@ async function loadConfigFile(filePath) {
     catch (error) {
         log(`Error loading config file: ${error}`);
         return null;
+    }
+}
+/**
+ * Asynchronously checks if a file exists and is accessible.
+ *
+ * @param filePath - The path to the file to check.
+ * @returns True if the file exists and is accessible, false otherwise.
+ */
+async function fileExists(filePath) {
+    try {
+        await fs_1.promises.access(filePath);
+        return true;
+    }
+    catch {
+        return false;
     }
 }
 /**
@@ -100,13 +115,13 @@ async function findConfigFile(workspaceFolders) {
     if (configPath && configPath.trim() !== '') {
         // If absolute path, use it directly
         if (path.isAbsolute(configPath)) {
-            return fs.existsSync(configPath) ? configPath : null;
+            return (await fileExists(configPath)) ? configPath : null;
         }
         // Relative path - try to resolve from each workspace folder
         if (workspaceFolders && workspaceFolders.length > 0) {
             for (const folder of workspaceFolders) {
                 const fullPath = path.join(folder.uri.fsPath, configPath);
-                if (fs.existsSync(fullPath)) {
+                if (await fileExists(fullPath)) {
                     return fullPath;
                 }
             }
@@ -124,7 +139,7 @@ async function findConfigFile(workspaceFolders) {
                 path.join(folder.uri.fsPath, '.doc-detective.yml')
             ];
             for (const file of possibleFiles) {
-                if (fs.existsSync(file)) {
+                if (await fileExists(file)) {
                     log(`Found config file: ${file}`);
                     return file;
                 }
