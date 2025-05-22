@@ -28,6 +28,27 @@ The extension will automatically scan open files for:
 - Test specifications in YAML or JSON format
 - Documentation with embedded test steps
 
+## Configuration
+
+### Config Path
+
+You can specify a custom path to your Doc Detective configuration file using the `docDetective.configPath` setting:
+
+1. Open VS Code Settings (File > Preferences > Settings)
+2. Search for "Doc Detective"
+3. Set the "Config Path" field to your configuration file path
+
+The path can be:
+- **Absolute path**: Full path to your config file (e.g., `/home/user/my-project/.doc-detective.json`)
+- **Relative path**: Path relative to your workspace root (e.g., `config/.doc-detective.yaml`)
+
+If no custom path is specified, the extension automatically searches for these files in your workspace root:
+- `.doc-detective.json`
+- `.doc-detective.yaml` 
+- `.doc-detective.yml`
+
+The configuration file can be in JSON or YAML format and follows the Doc Detective configuration schema.
+
 ## Related Projects
 
 Doc Detective has multiple components that work together:
