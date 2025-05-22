@@ -16,7 +16,6 @@
   ],
   "activationEvents": [
     "onCommand:doc-detective-vsc.helloWorld",
-    "onCommand:doc-detective-vsc.refresh",
     "onCommand:doc-detective-vsc.simpleView",
     "onView:docDetectiveView"
   ],
@@ -26,11 +25,6 @@
       {
         "command": "doc-detective.helloWorld",
         "title": "Hello World"
-      },
-      {
-        "command": "doc-detective.refresh",
-        "title": "Refresh Doc Detective Panel",
-        "icon": "$(refresh)"
       },
       {
         "command": "doc-detective.simpleView",
@@ -50,11 +44,6 @@
     },
     "menus": {
       "view/title": [
-        {
-          "command": "doc-detective.refresh",
-          "when": "view == docDetectiveView",
-          "group": "navigation"
-        },
         {
           "command": "doc-detective.simpleView",
           "when": "view == docDetectiveView",
