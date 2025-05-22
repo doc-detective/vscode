@@ -13,7 +13,8 @@
     "*"
   ],
   "main": "./dist/extension.js",
-  "contributes": {    "commands": [
+  "contributes": {
+    "commands": [
       {
         "command": "doc-detective-vsc.helloWorld",
         "title": "Hello World"
@@ -28,7 +29,8 @@
         "title": "Use Simple View",
         "icon": "$(list-flat)"
       }
-    ],    "menus": {
+    ],
+    "menus": {
       "view/title": [
         {
           "command": "doc-detective-vsc.refresh",
@@ -61,6 +63,10 @@
       ]
     }
   },
+"repository": {
+    "type": "git",
+    "url": "https://github.com/doc-detective/vscode.git"
+  },
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
@@ -87,6 +93,7 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "@vscode/vsce": "^3.4.2",
     "doc-detective-resolver": "^3.0.0",
     "js-yaml": "^4.1.0"
   }
