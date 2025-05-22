@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         os: 
-          - ubuntu-latest
+        #   - ubuntu-latest    Ubuntu omitted because GitHub Actions' Ubuntu image doesn't have compatible X server
           - windows-latest
           - macos-latest
         node:
@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
+          node-version: ${{ matrix.node }}
           cache: 'npm'
           cache-dependency-path: package-lock.json
           registry-url: https://registry.npmjs.org/
