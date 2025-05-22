@@ -1,114 +1,119 @@
 {
   "name": "doc-detective",
   "displayName": "Doc Detective",
-  "publisher": "hawkeyexl",
-  "description": "The documentation testing framework.",
+  "publisher": "DocDetective",
+  "description": "View Doc Detective tests for active files.",
   "version": "0.0.2",
-  "icon": "icon.png",
-  "preview": true,
+  "sponsor": {
+    "url": "https://github.com/sponsors/doc-detective"
+  },
   "engines": {
-    "vscode": "^1.72.0"
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Testing",
     "Other"
   ],
   "activationEvents": [
-    "onCommand:doc-detective.set-config-path",
-    "onCommand:doc-detective.test",
-    "onCommand:doc-detective.test-single",
-    "onCommand:doc-detective.coverage",
-    "onCommand:doc-detective.coverage-single",
-    "onCommand:doc-detective.suggest",
-    "onCommand:doc-detective.suggest-single",
-    "onCommand:doc-detective.insert-start",
-    "onCommand:doc-detective.insert-ignore",
-    "onCommand:doc-detective.insert-end",
-    "onCommand:doc-detective.insert-action",
-    "onCommand:doc-detective.detect-markup"
+    "onCommand:doc-detective-vsc.helloWorld",
+    "onCommand:doc-detective-vsc.refresh",
+    "onCommand:doc-detective-vsc.simpleView",
+    "onView:docDetectiveView"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "doc-detective.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "doc-detective.refresh",
+        "title": "Refresh Doc Detective Panel",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "doc-detective.simpleView",
+        "title": "Use Simple View",
+        "icon": "$(list-flat)"
+      }
+    ],
     "configuration": {
       "title": "Doc Detective",
       "properties": {
         "docDetective.configPath": {
           "type": "string",
-          "default": null,
-          "description": "Path to your Doc Detective configuration file."
+          "default": "",
+          "description": "Path to the Doc Detective configuration file. If not specified, the extension looks for .doc-detective.json, .doc-detective.yaml, or .doc-detective.yml in the workspace root."
         }
       }
     },
-    "commands": [
-      {
-        "command": "doc-detective.test",
-        "title": "Doc Detective: Run Tests"
-      },
-      {
-        "command": "doc-detective.test-single",
-        "title": "Doc Detective: Run Tests - Current File"
-      },
-      {
-        "command": "doc-detective.coverage",
-        "title": "Doc Detective: Analyze Test Coverage"
-      },
-      {
-        "command": "doc-detective.coverage-single",
-        "title": "Doc Detective: Analyze Test Coverage - Current File"
-      },
-      {
-        "command": "doc-detective.suggest",
-        "title": "Doc Detective: Suggest Tests"
-      },
-      {
-        "command": "doc-detective.suggest-single",
-        "title": "Doc Detective: Suggest Tests - Current File"
-      },
-      {
-        "command": "doc-detective.insert-start",
-        "title": "Doc Detective: Insert Statement - Test Start"
-      },
-      {
-        "command": "doc-detective.insert-ignore",
-        "title": "Doc Detective: Insert Statement - Test Ignore"
-      },
-      {
-        "command": "doc-detective.insert-end",
-        "title": "Doc Detective: Insert Statement - Test End"
-      },
-      {
-        "command": "doc-detective.insert-action",
-        "title": "Doc Detective: Insert Statement - Action"
-      },
-      {
-        "command": "doc-detective.detect-markup",
-        "title": "Doc Detective: Detect Uncovered Markup"
-      }
-    ]
-  },
-  "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "echo 'No tests yet'",
-    "test_old": "node ./test/runTest.js"
-  },
-  "devDependencies": {
-    "@types/glob": "^8.0.0",
-    "@types/mocha": "^10.0.0",
-    "@types/node": "16.x",
-    "@types/vscode": "^1.72.0",
-    "@vscode/test-electron": "^2.1.5",
-    "eslint": "^8.24.0",
-    "glob": "^8.0.3",
-    "mocha": "^10.0.0",
-    "typescript": "^4.8.4"
-  },
-  "dependencies": {
-    "doc-detective": "^1.2.3"
+    "menus": {
+      "view/title": [
+        {
+          "command": "doc-detective.refresh",
+          "when": "view == docDetectiveView",
+          "group": "navigation"
+        },
+        {
+          "command": "doc-detective.simpleView",
+          "when": "view == docDetectiveView",
+          "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "docDetectiveSidebar",
+          "title": "Doc Detective",
+          "icon": "media/dd-mono.png"
+        }
+      ]
+    },
+    "views": {
+      "docDetectiveSidebar": [
+        {
+          "id": "docDetectiveView",
+          "name": "Detected Tests",
+          "type": "webview"
+        }
+      ]
+    }
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hawkeyexl/doc-detective-vsc.git"
+    "url": "https://github.com/doc-detective/vscode.git"
   },
-  "homepage": "https://github.com/hawkeyexl/doc-detective-vsc/blob/main/README.md"
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.15.21",
+    "@types/vscode": "^1.100.0",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "eslint": "^9.27.0",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.3",
+    "webpack": "^5.99.9",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "@vscode/vsce": "^3.4.2",
+    "doc-detective-resolver": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
 }

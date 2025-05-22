@@ -1,36 +1,73 @@
-# Doc Detective
+# Doc Detective VSCode Extension
 
-![Current version](https://img.shields.io/github/package-json/v/doc-detective/doc-detective-vsc?color=orange)
-[![Visual Studio Marketplace Shield](https://img.shields.io/visual-studio-marketplace/v/DocDetective.doc-detective?color=blue&label=visual%20studio%20marketplace)](https://marketplace.visualstudio.com/items?itemName=DocDetective.doc-detective)
-[![Discord Shield](https://discordapp.com/api/guilds/1066417654899937453/widget.png?style=shield)](https://discord.gg/mSCCRAhH)
-
-This extension brings [Doc Detective](https://github.com/hawkeyexl/doc-detective) to Visual Studio Code! Run tests and analyze content test coverage without having to leave your source files.
+The Doc Detective VSCode Extension integrates the [Doc Detective](https://doc-detective.com) documentation testing framework directly into your Visual Studio Code environment. This extension helps you detect, view, and manage documentation tests embedded in your content files, making it easier to keep your documentation accurate and up-to-date.
 
 ## Features
 
-* Run tests in the active file.
-* Run all tests in your default input path.
-* Analyze test coverage for the active file.
-* Analyze test coverage for all files in your default input path.
+- **Real-time Test Detection**: Automatically detects Doc Detective tests in your open files
+- **Sidebar Integration**: View detected tests in a dedicated Doc Detective panel in the activity bar
+- **Interactive Test Explorer**: Navigate through detected tests with collapsible sections for easy viewing
+- **Syntax Highlighting**: Tests are displayed with proper syntax highlighting for improved readability
 
-> Note: This extension doesn't yet support suggesting tests from source files.
+## How It Works
 
+Doc Detective is a documentation testing framework that helps validate documentation against real product behavior. This extension uses `doc-detective-resolver` to scan your documentation files for embedded tests and displays them in the sidebar panel.
+    
 ## Requirements
 
-To run this extension, you need a complete [`config.json`](https://github.com/hawkeyexl/doc-detective/blob/main/sample/config.json), just as if you were using Doc Detective as an NPM package or CLI tool.
+- Visual Studio Code v1.100.0 or higher
 
-## Extension Settings
+## Using Doc Detective Extension
 
-This extension contributes the following settings:
+1. Open a file that contains Doc Detective tests or inline test steps
+2. Click the Doc Detective icon in the activity bar
+3. Review the detected tests in your document
 
-* `docDetective.config`: The path to your `config.json` file. Relative paths evaluate from the root of your current workspace.
+The extension will automatically scan open files for:
+- Inline tests using HTML comments or markdown comment syntax
+- Test specifications in YAML or JSON format
+- Documentation with embedded test steps
 
-## Known Issues
+## Configuration
 
-This is an alpha release. Don't use it unless you know what you're doing.
+### Config Path
 
-## Release Notes
+You can specify a custom path to your Doc Detective configuration file using the `docDetective.configPath` setting:
 
-### 0.0.1
+1. Open VS Code Settings (File > Preferences > Settings)
+2. Search for "Doc Detective"
+3. Set the "Config Path" field to your configuration file path
 
-Initial alpha release.
+The path can be:
+- **Absolute path**: Full path to your config file (e.g., `/home/user/my-project/.doc-detective.json`)
+- **Relative path**: Path relative to your workspace root (e.g., `config/.doc-detective.yaml`)
+
+If no custom path is specified, the extension automatically searches for these files in your workspace root:
+- `.doc-detective.json`
+- `.doc-detective.yaml` 
+- `.doc-detective.yml`
+
+The configuration file can be in JSON or YAML format and follows the Doc Detective configuration schema.
+
+## Related Projects
+
+Doc Detective has multiple components that work together:
+
+- [Doc Detective](https://github.com/doc-detective/doc-detective): The main CLI tool for running documentation tests
+- [Doc Detective Resolver](https://github.com/doc-detective/resolver): Library for detecting tests in documentation files
+- [Doc Detective Core](https://github.com/doc-detective/doc-detective-core): Core testing functionality
+- [Doc Detective Common](https://github.com/doc-detective/doc-detective-common): Shared utilities and components
+
+## Learn More
+
+- [Doc Detective Documentation](https://doc-detective.com)
+- [GitHub Repository](https://github.com/doc-detective/vscode)
+- [Discord Community](https://discord.gg/2M7wXEThfF)
+
+## Contributing
+
+Interested in contributing to this extension? Check out the [Doc Detective GitHub organization](https://github.com/doc-detective) to learn more about the project and how to get involved.
+
+---
+
+**Made with ❤️ by the Doc Detective team**
