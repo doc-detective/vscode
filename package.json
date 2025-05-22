@@ -14,7 +14,12 @@
     "Testing",
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:doc-detective-vsc.helloWorld",
+    "onCommand:doc-detective-vsc.refresh",
+    "onCommand:doc-detective-vsc.simpleView",
+    "onView:docDetectiveView"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
