@@ -47,6 +47,11 @@ const vscode = __importStar(__webpack_require__(1));
 const { detectTests } = __webpack_require__(2);
 // Create an output channel for logging
 const outputChannel = vscode.window.createOutputChannel('Doc Detective');
+// Helper function to log messages to both console and output channel
+function log(message) {
+    console.log(message);
+    outputChannel.appendLine(message);
+}
 // WebviewViewProvider for Doc Detective
 class DocDetectiveWebviewViewProvider {
     context;
@@ -60,331 +65,620 @@ class DocDetectiveWebviewViewProvider {
         return !!this._view;
     }
     async resolveWebviewView(webviewView, context, _token) {
-        this._view = webviewView;
-        webviewView.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')]
-        };
-        // Set content security policy for the webview
-        // Allow inline styles and scripts, as well as VS Code's webview CSS
-        webviewView.webview.html = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline';">
-        <title>Loading Doc Detective...</title>
-      </head>
-      <body>
-        <div>Loading Doc Detective...</div>
-      </body>
-      </html>
-    `;
-        // Initial render
-        await this.updateWebview();
-        // Listen for messages from the webview (if needed)
-        webviewView.webview.onDidReceiveMessage(async (message) => {
-            if (message.command === 'refresh') {
-                await this.updateWebview();
+        try {
+            log('Resolving webview view...');
+            this._view = webviewView;
+            webviewView.webview.options = {
+                enableScripts: true,
+                localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, 'media')]
+            };
+            // Set content security policy for the webview
+            // Allow inline styles and scripts, as well as VS Code's webview CSS
+            // Updated CSP to be more permissive for webview functionality
+            webviewView.webview.html = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
+          <title>Loading Doc Detective...</title>
+          <style>
+            body {
+              padding: 20px;
+              color: var(--vscode-editor-foreground);
+              font-family: var(--vscode-font-family);
             }
-        });
+            .loading {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="loading">Loading Doc Detective... Please wait.</div>
+        </body>
+        </html>
+      `;
+            // Initial render
+            log('Initial webview HTML set, updating webview...');
+            await this.updateWebview();
+            // Listen for messages from the webview (if needed)
+            webviewView.webview.onDidReceiveMessage(async (message) => {
+                log(`Received message from webview: ${JSON.stringify(message)}`);
+                if (message.command === 'refresh') {
+                    await this.updateWebview();
+                }
+            });
+            log('Webview view resolved successfully');
+        }
+        catch (error) {
+            log(`Error resolving webview: ${error}`);
+            if (this._view) {
+                this._view.webview.html = this.getErrorHtml(`Failed to initialize Doc Detective panel: ${error}`);
+            }
+        }
     }
     async updateWebview() {
-        if (!this._view) {
-            return;
-        }
-        // Get open files
-        const editors = vscode.window.visibleTextEditors;
-        const filePaths = editors
-            .filter(e => e.document.uri.scheme === 'file')
-            .map(e => e.document.uri.fsPath);
-        const uniquePaths = Array.from(new Set(filePaths));
-        // For each file, detect tests
-        const results = {};
-        for (const file of uniquePaths) {
+        try {
+            if (!this._view) {
+                log('No view available to update');
+                return;
+            }
+            log('Updating webview content...');
+            // Get open files
+            const editors = vscode.window.visibleTextEditors;
+            const filePaths = editors
+                .filter(e => e.document.uri.scheme === 'file')
+                .map(e => e.document.uri.fsPath);
+            const uniquePaths = Array.from(new Set(filePaths));
+            log(`Found ${uniquePaths.length} unique file paths`);
+            if (uniquePaths.length === 0) {
+                this._view.webview.html = this.getNoFilesHtml();
+                return;
+            }
+            // Show loading state
+            this._view.webview.html = this.getLoadingHtml();
+            // For each file, detect tests
+            const results = {};
+            for (const file of uniquePaths) {
+                try {
+                    log(`Detecting tests for file: ${file}`);
+                    const suites = await detectTests({ config: { input: file } });
+                    results[file] = suites;
+                    log(`Detected tests for ${file}: ${JSON.stringify(suites).substring(0, 100)}...`);
+                }
+                catch (e) {
+                    log(`Error detecting tests for ${file}: ${e}`);
+                    results[file] = { error: String(e) };
+                }
+            }
+            // Render JSON in webview
+            log('Rendering results to HTML...');
             try {
-                const suites = await detectTests({ config: { input: file } });
-                results[file] = suites;
+                this._view.webview.html = this.getHtmlForWebview(results);
+                log('Webview updated successfully with full view');
             }
-            catch (e) {
-                results[file] = { error: String(e) };
+            catch (renderError) {
+                log(`Error with full view rendering, falling back to simplified view: ${renderError}`);
+                try {
+                    this._view.webview.html = this.getSimplifiedHtmlForWebview(results);
+                    log('Webview updated with simplified view');
+                }
+                catch (fallbackError) {
+                    log(`Error with simplified view too: ${fallbackError}`);
+                    this._view.webview.html = this.getErrorHtml(`Failed to render results: ${renderError}. Fallback also failed: ${fallbackError}`);
+                }
             }
         }
-        // Render JSON in webview
-        this._view.webview.html = this.getHtmlForWebview(results);
+        catch (error) {
+            log(`Error updating webview: ${error}`);
+            if (this._view) {
+                this._view.webview.html = this.getErrorHtml(`Failed to update Doc Detective panel: ${error}`);
+            }
+        }
     }
-    getHtmlForWebview(jsonObj) {
-        const jsonString = JSON.stringify(jsonObj).replace(/</g, '\u003c');
+    getLoadingHtml() {
         return `<!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline';">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
         <title>Doc Detective Results</title>
         <style>
-          :root {
-            --background: var(--vscode-editor-background);
-            --foreground: var(--vscode-editor-foreground);
-            --key-color: var(--vscode-symbolIcon-propertyForeground, var(--vscode-debugTokenExpression-name, #9cdcfe));
-            --string-color: var(--vscode-debugTokenExpression-string, #ce9178);
-            --number-color: var(--vscode-debugTokenExpression-number, #b5cea8);
-            --boolean-color: var(--vscode-debugTokenExpression-boolean, #569cd6);
-            --indent-color: var(--vscode-editorIndentGuide-background, #555);
-            --dash-color: var(--vscode-editorIndentGuide-activeBackground, #666);
-            --toggle-color: var(--vscode-editorLink-activeForeground, #569cd6);
-          }
-          
-          body { 
+          body {
             font-family: var(--vscode-editor-font-family, monospace); 
             margin: 0; 
-            padding: 0.5em; 
-            background: var(--background); 
-            color: var(--foreground);
-            font-size: var(--vscode-editor-font-size, 14px);
-            line-height: 1.5;
+            padding: 1em; 
+            background: var(--vscode-editor-background); 
+            color: var(--vscode-editor-foreground);
           }
-          
-          .collapsible { cursor: pointer; }
-          
-          .content { 
-            display: block; 
-            margin-left: 1.5em; 
-          }
-          
-          li:not(.active) > .content { 
-            display: none; 
-          }
-          
-          .key { 
-            color: var(--key-color); 
-            font-weight: var(--vscode-font-weight, normal);
-          }
-          
-          .string { 
-            color: var(--string-color); 
-          }
-          
-          .number { 
-            color: var(--number-color); 
-          }
-          
-          .boolean { 
-            color: var(--boolean-color); 
-          }
-          
-          .null { 
-            color: var(--foreground);
-            opacity: 0.7; 
-          }
-          
-          ul { 
-            list-style-type: none; 
-            margin: 0; 
-            padding: 0; 
-          }
-          
-          .yaml-indent { 
-            color: var(--indent-color); 
-          }
-          
-          .yaml-dash { 
-            color: var(--dash-color); 
-          }
-          
-          .toggle { 
-            color: var(--toggle-color);
-            display: inline-block;
-            width: 1em;
-            text-align: center;
-          }
-          
-          .simple-obj { 
-            margin-left: 1.5em;
-            padding-left: 0.5em;
-            border-left: 1px solid var(--indent-color);
-          }
-          
-          /* Basic styling */
-          .collapsible {
-            transition: opacity 0.1s;
-          }
-          
-          li {
-            padding: 1px 0;
+          .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
           }
         </style>
       </head>
       <body>
-        <div id="json"></div>
-        <script>
-          const jsonObj = JSON.parse('' + '${jsonString}'.replace(/\\u003c/g, '<'));
-          function escapeHTML(str) {
-            return str.replace(/[&<>]/g, function(tag) {
-              const chars = {'&':'&amp;','<':'&lt;','>':'&gt;'};
-              return chars[tag] || tag;
-            });
-          }
-          
-          // Helper function to check if an object has nested objects/arrays
-          function hasNestedObjects(obj) {
-            if (typeof obj !== 'object' || obj === null) return false;
-            
-            if (Array.isArray(obj)) {
-              return obj.some(item => typeof item === 'object' && item !== null);
-            } else {
-              return Object.values(obj).some(val => typeof val === 'object' && val !== null);
-            }
-          }
-          
-          function renderYAML(obj, indent = 0, isArrayItem = false) {
-            const INDENT = '  ';
-            const pad = (n) => INDENT.repeat(n);
-            
-            if (typeof obj !== 'object' || obj === null) {
-              if (typeof obj === 'string') return '<span class="string">' + escapeHTML(obj) + '</span>';
-              if (typeof obj === 'number') return '<span class="number">' + obj + '</span>';
-              if (typeof obj === 'boolean') return '<span class="boolean">' + obj + '</span>';
-              if (obj === null) return '<span class="null">null</span>';
-              return obj;
-            }
-            
-            if (Array.isArray(obj)) {
-              if (obj.length === 0) return '[]';
-              let html = '<ul>';
-              
-              for (let i = 0; i < obj.length; i++) {
-                const value = obj[i];
-                const indentSpan = '<span class="yaml-indent">' + pad(indent) + '</span>';
-                
-                if (typeof value === 'object' && value !== null) {
-                  if (Array.isArray(value)) {
-                    // Array inside array
-                    html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
-                            renderYAML(value, indent + 1, true) + '</li>';
-                  } else {
-                    // Object inside array
-                    const keys = Object.keys(value);
-                    if (keys.length === 0) {
-                      html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> {}</li>';
-                    } else {
-                      const hasNested = hasNestedObjects(value);
-                      const firstKey = keys[0];
-
-                      if (hasNested) {
-                        // This is a complex object with nested properties
-                        // Use triangle toggle INSTEAD OF dash marker
-                        html += '<li class="active">' + indentSpan + 
-                                '<span class="collapsible"><span class="toggle">▼</span> <span class="key">' + 
-                                escapeHTML(firstKey) + ':</span></span>';
-
-                        if (typeof value[firstKey] === 'object' && value[firstKey] !== null) {
-                          // First value is also an object
-                          html += '<div class="content">' + renderYAML(value[firstKey], indent + 1) + '</div>';
-                        } else {
-                          // First value is a primitive
-                          html += ' ' + renderYAML(value[firstKey], 0);
-                          html += '<div class="content">';
-                          for (let k = 1; k < keys.length; k++) {
-                            html += '<div>' + 
-                                    '<span class="yaml-indent">' + pad(indent + 1) + '</span>' +
-                                    '<span class="key">' + escapeHTML(keys[k]) + ':</span> ' + 
-                                    renderYAML(value[keys[k]], 0) + '</div>';
-                          }
-                          html += '</div>';
-                        }
-                      } else {
-                        // Simple object - use dash marker
-                        html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' +
-                                '<span class="key">' + escapeHTML(firstKey) + ':</span> ' +
-                                renderYAML(value[firstKey], 0);
-                        
-                        if (keys.length > 1) {
-                          html += '<div class="simple-obj">';
-                          for (let k = 1; k < keys.length; k++) {
-                            html += '<div>' + 
-                                    '<span class="key">' + escapeHTML(keys[k]) + ':</span> ' + 
-                                    renderYAML(value[keys[k]], 0) + '</div>';
-                          }
-                          html += '</div>';
-                        }
-                      }
-                    }
-                  }
-                } else {
-                  // Simple value in array
-                  html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
-                          renderYAML(value, 0, true) + '</li>';
-                }
-                html += '</li>';
-              }
-              
-              html += '</ul>';
-              return html;
-            } else {
-              // It's an object
-              const keys = Object.keys(obj);
-              if (keys.length === 0) return '{}';
-              
-              let html = '<ul>';
-              keys.forEach(function(key) {
-                const value = obj[key];
-                const indentation = '<span class="yaml-indent">' + pad(indent) + '</span>';
-                
-                if (typeof value === 'object' && value !== null && (hasNestedObjects(value) || Array.isArray(value))) {
-                  // Object with nested structure - use triangle
-                  html += '<li class="active">' + indentation +
-                          '<span class="collapsible"><span class="toggle">▼</span> <span class="key">' + 
-                          escapeHTML(key) + ':</span></span>' +
-                          '<div class="content">' + renderYAML(value, indent + 1, Array.isArray(value)) + '</div>' +
-                          '</li>';
-                } else {
-                  // Simple key-value
-                  html += '<li>' + indentation + '<span class="key">' + 
-                          escapeHTML(key) + ':</span> ' + renderYAML(value, 0) + '</li>';
-                }
-              });
-              
-              html += '</ul>';
-              return html;
-            }
-          }
-          
-          document.getElementById('json').innerHTML = renderYAML(jsonObj, 0);
-          document.querySelectorAll('.collapsible').forEach(function(el) {
-            el.addEventListener('click', function(e) {
-              e.stopPropagation();
-              var parent = el.parentElement;
-              parent.classList.toggle('active');
-              
-              // Update the toggle arrow
-              const toggleEl = el.querySelector('.toggle');
-              if (toggleEl) {
-                toggleEl.textContent = parent.classList.contains('active') ? '▼' : '▶';
-              }
-            });
-          });
-
-          // Handle theme changes
-          window.addEventListener('message', event => {
-            const message = event.data;
-            if (message.type === 'vscode-theme-updated') {
-              // No need to do anything special - CSS vars will update automatically
-              console.log('Theme updated');
-            }
-          });
-
-          const vscode = acquireVsCodeApi();
-        </script>
+        <div class="loading">Processing files, please wait...</div>
       </body>
       </html>`;
+    }
+    getNoFilesHtml() {
+        return `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
+        <title>Doc Detective Results</title>
+        <style>
+          body {
+            font-family: var(--vscode-editor-font-family, monospace); 
+            margin: 0; 
+            padding: 1em; 
+            background: var(--vscode-editor-background); 
+            color: var(--vscode-editor-foreground);
+          }
+          .message {
+            padding: 1em;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="message">
+          <h3>No files open</h3>
+          <p>Open files in the editor to see Doc Detective results.</p>
+        </div>
+      </body>
+      </html>`;
+    }
+    getErrorHtml(errorMessage) {
+        return `<!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
+        <title>Doc Detective Error</title>
+        <style>
+          body {
+            font-family: var(--vscode-editor-font-family, monospace); 
+            margin: 0; 
+            padding: 1em; 
+            background: var(--vscode-editor-background); 
+            color: var(--vscode-editor-foreground);
+          }
+          .error {
+            color: var(--vscode-errorForeground);
+            padding: 1em;
+            border: 1px solid currentColor;
+            margin: 1em 0;
+          }
+        </style>
+      </head>
+      <body>
+        <h3>Doc Detective Error</h3>
+        <div class="error">${errorMessage}</div>
+        <p>Check the Doc Detective output channel for more details.</p>
+      </body>
+      </html>`;
+    }
+    getHtmlForWebview(jsonObj) {
+        try {
+            // Handle empty results
+            if (!jsonObj || Object.keys(jsonObj).length === 0) {
+                log('No results to display');
+                return this.getNoFilesHtml();
+            }
+            // Properly escape the JSON for embedding in JavaScript
+            // First stringify the object, then escape any problematic characters
+            const jsonString = JSON.stringify(JSON.stringify(jsonObj))
+                .slice(1, -1) // Remove the outer quotes added by the second stringify
+                .replace(/\\"/g, '\\"'); // Ensure quotes are properly escaped
+            // Log a sample of the prepared JSON string for debugging
+            log(`JSON string prepared (first 100 chars): ${jsonString.substring(0, 100)}...`);
+            return `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
+          <title>Doc Detective Results</title>
+          <style>
+            :root {
+              --background: var(--vscode-editor-background);
+              --foreground: var(--vscode-editor-foreground);
+              --key-color: var(--vscode-symbolIcon-propertyForeground, var(--vscode-debugTokenExpression-name, #9cdcfe));
+              --string-color: var(--vscode-debugTokenExpression-string, #ce9178);
+              --number-color: var(--vscode-debugTokenExpression-number, #b5cea8);
+              --boolean-color: var(--vscode-debugTokenExpression-boolean, #569cd6);
+              --indent-color: var(--vscode-editorIndentGuide-background, #555);
+              --dash-color: var(--vscode-editorIndentGuide-activeBackground, #666);
+              --toggle-color: var(--vscode-editorLink-activeForeground, #569cd6);
+            }
+            
+            body { 
+              font-family: var(--vscode-editor-font-family, monospace); 
+              margin: 0; 
+              padding: 0.5em; 
+              background: var(--background); 
+              color: var(--foreground);
+              font-size: var(--vscode-editor-font-size, 14px);
+              line-height: 1.5;
+            }
+            
+            .collapsible { cursor: pointer; }
+            
+            .content { 
+              display: block; 
+              margin-left: 1.5em; 
+            }
+            
+            li:not(.active) > .content { 
+              display: none; 
+            }
+            
+            .key { 
+              color: var(--key-color); 
+              font-weight: var(--vscode-font-weight, normal);
+            }
+            
+            .string { 
+              color: var(--string-color); 
+            }
+            
+            .number { 
+              color: var(--number-color); 
+            }
+            
+            .boolean { 
+              color: var(--boolean-color); 
+            }
+            
+            .null { 
+              color: var(--foreground);
+              opacity: 0.7; 
+            }
+            
+            ul { 
+              list-style-type: none; 
+              margin: 0; 
+              padding: 0; 
+            }
+            
+            .yaml-indent { 
+              color: var(--indent-color); 
+            }
+            
+            .yaml-dash { 
+              color: var(--dash-color); 
+            }
+            
+            .toggle { 
+              color: var(--toggle-color);
+              display: inline-block;
+              width: 1em;
+              text-align: center;
+            }
+            
+            .simple-obj { 
+              margin-left: 1.5em;
+              padding-left: 0.5em;
+              border-left: 1px solid var(--indent-color);
+            }
+            
+            /* Basic styling */
+            .collapsible {
+              transition: opacity 0.1s;
+            }
+            
+            li {
+              padding: 1px 0;
+            }
+            
+            /* Error/debug info */
+            .error-info {
+              color: var(--vscode-errorForeground);
+              margin: 8px 0;
+              padding: 8px;
+              border: 1px solid currentColor;
+            }
+
+            /* No results message */
+            .no-results {
+              text-align: center;
+              padding: 20px;
+            }
+          </style>        </head>
+        <body>
+          <div id="debug-info" style="display: none; padding: 8px; margin-bottom: 12px; border: 1px solid var(--vscode-debugTokenExpression-name); font-size: 12px;"></div>
+          <div id="json"></div><script>
+            // Error handling wrapper
+            try {
+              // Use the pre-escaped JSON string directly
+              // This avoids issues with template string interpolation
+              const jsonObj = JSON.parse("${jsonString}");
+              
+              // Check if we have data to display
+              if (!jsonObj || Object.keys(jsonObj).length === 0) {
+                document.getElementById('json').innerHTML = '<div class="no-results">No results to display</div>';
+                console.log('Empty results object');
+              }
+              
+              function escapeHTML(str) {
+                return str.replace(/[&<>]/g, function(tag) {
+                  const chars = {'&':'&amp;','<':'&lt;','>':'&gt;'};
+                  return chars[tag] || tag;
+                });
+              }
+              
+              // Helper function to check if an object has nested objects/arrays
+              function hasNestedObjects(obj) {
+                if (typeof obj !== 'object' || obj === null) return false;
+                
+                if (Array.isArray(obj)) {
+                  return obj.some(item => typeof item === 'object' && item !== null);
+                } else {
+                  return Object.values(obj).some(val => typeof val === 'object' && val !== null);
+                }
+              }
+              
+              function renderYAML(obj, indent = 0, isArrayItem = false) {
+                const INDENT = '  ';
+                const pad = (n) => INDENT.repeat(n);
+                
+                if (typeof obj !== 'object' || obj === null) {
+                  if (typeof obj === 'string') return '<span class="string">' + escapeHTML(obj) + '</span>';
+                  if (typeof obj === 'number') return '<span class="number">' + obj + '</span>';
+                  if (typeof obj === 'boolean') return '<span class="boolean">' + obj + '</span>';
+                  if (obj === null) return '<span class="null">null</span>';
+                  return obj;
+                }
+                
+                if (Array.isArray(obj)) {
+                  if (obj.length === 0) return '[]';
+                  let html = '<ul>';
+                  
+                  for (let i = 0; i < obj.length; i++) {
+                    const value = obj[i];
+                    const indentSpan = '<span class="yaml-indent">' + pad(indent) + '</span>';
+                    
+                    if (typeof value === 'object' && value !== null) {
+                      if (Array.isArray(value)) {
+                        // Array inside array
+                        html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
+                                renderYAML(value, indent + 1, true) + '</li>';
+                      } else {
+                        // Object inside array
+                        const keys = Object.keys(value);
+                        if (keys.length === 0) {
+                          html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> {}</li>';
+                        } else {
+                          const hasNested = hasNestedObjects(value);
+                          const firstKey = keys[0];
+
+                          if (hasNested) {
+                            // This is a complex object with nested properties
+                            // Use triangle toggle INSTEAD OF dash marker
+                            html += '<li class="active">' + indentSpan + 
+                                    '<span class="collapsible"><span class="toggle">▼</span> <span class="key">' + 
+                                    escapeHTML(firstKey) + ':</span></span>';
+
+                            if (typeof value[firstKey] === 'object' && value[firstKey] !== null) {
+                              // First value is also an object
+                              html += '<div class="content">' + renderYAML(value[firstKey], indent + 1) + '</div>';
+                            } else {
+                              // First value is a primitive
+                              html += ' ' + renderYAML(value[firstKey], 0);
+                              html += '<div class="content">';
+                              for (let k = 1; k < keys.length; k++) {
+                                html += '<div>' + 
+                                        '<span class="yaml-indent">' + pad(indent + 1) + '</span>' +
+                                        '<span class="key">' + escapeHTML(keys[k]) + ':</span> ' + 
+                                        renderYAML(value[keys[k]], 0) + '</div>';
+                              }
+                              html += '</div>';
+                            }
+                          } else {
+                            // Simple object - use dash marker
+                            html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' +
+                                    '<span class="key">' + escapeHTML(firstKey) + ':</span> ' +
+                                    renderYAML(value[firstKey], 0);
+                            
+                            if (keys.length > 1) {
+                              html += '<div class="simple-obj">';
+                              for (let k = 1; k < keys.length; k++) {
+                                html += '<div>' + 
+                                        '<span class="key">' + escapeHTML(keys[k]) + ':</span> ' + 
+                                        renderYAML(value[keys[k]], 0) + '</div>';
+                              }
+                              html += '</div>';
+                            }
+                          }
+                        }
+                      }
+                    } else {
+                      // Simple value in array
+                      html += '<li>' + indentSpan + '<span class="yaml-dash">-</span> ' + 
+                              renderYAML(value, 0, true) + '</li>';
+                    }
+                    html += '</li>';
+                  }
+                  
+                  html += '</ul>';
+                  return html;
+                } else {
+                  // It's an object
+                  const keys = Object.keys(obj);
+                  if (keys.length === 0) return '{}';
+                  
+                  let html = '<ul>';
+                  keys.forEach(function(key) {
+                    const value = obj[key];
+                    const indentation = '<span class="yaml-indent">' + pad(indent) + '</span>';
+                    
+                    if (typeof value === 'object' && value !== null && (hasNestedObjects(value) || Array.isArray(value))) {
+                      // Object with nested structure - use triangle
+                      html += '<li class="active">' + indentation +
+                              '<span class="collapsible"><span class="toggle">▼</span> <span class="key">' + 
+                              escapeHTML(key) + ':</span></span>' +
+                              '<div class="content">' + renderYAML(value, indent + 1, Array.isArray(value)) + '</div>' +
+                              '</li>';
+                    } else {
+                      // Simple key-value
+                      html += '<li>' + indentation + '<span class="key">' + 
+                              escapeHTML(key) + ':</span> ' + renderYAML(value, 0) + '</li>';
+                    }
+                  });
+                  
+                  html += '</ul>';
+                  return html;
+                }
+              }
+              
+              document.getElementById('json').innerHTML = renderYAML(jsonObj, 0);
+              document.querySelectorAll('.collapsible').forEach(function(el) {
+                el.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  var parent = el.parentElement;
+                  parent.classList.toggle('active');
+                  
+                  // Update the toggle arrow
+                  const toggleEl = el.querySelector('.toggle');
+                  if (toggleEl) {
+                    toggleEl.textContent = parent.classList.contains('active') ? '▼' : '▶';
+                  }
+                });
+              });
+
+              // Handle theme changes
+              window.addEventListener('message', event => {
+                const message = event.data;
+                if (message.type === 'vscode-theme-updated') {
+                  console.log('Theme updated');
+                }
+              });
+                // Show success message
+              document.getElementById('debug-info').innerHTML = 'Data loaded successfully!';
+              
+              // Initialize VS Code API properly
+              try {
+                const vscode = acquireVsCodeApi();
+                
+                // Add a message to let the extension know we loaded successfully
+                setTimeout(() => {
+                  vscode.postMessage({
+                    command: 'webviewLoaded',
+                    data: { success: true }
+                  });
+                }, 500);
+              } catch (e) {
+                // This might happen if running in a context without VS Code API
+                console.error('Failed to acquire VS Code API:', e);
+                document.getElementById('debug-info').style.display = 'block';
+                document.getElementById('debug-info').innerHTML += '<br>VS Code API error: ' + e.message;
+              }
+            } catch (e) {
+              console.error('Error in webview script:', e);
+              document.getElementById('debug-info').style.display = 'block';
+              document.getElementById('debug-info').innerHTML = 'Error in webview: ' + e.message;
+              document.getElementById('json').innerHTML = 
+                '<div class="error-info">Error processing results: ' + e.message + '</div>';
+            }
+          </script>
+        </body>
+        </html>`;
+        }
+        catch (error) {
+            log(`Error generating HTML: ${error}`);
+            return this.getErrorHtml(`Failed to generate HTML: ${error}`);
+        }
+    }
+    getSimplifiedHtmlForWebview(jsonObj) {
+        try {
+            // Create a simpler representation without all the complex HTML
+            return `<!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
+          <title>Doc Detective Results (Simple View)</title>
+          <style>
+            body {
+              font-family: var(--vscode-editor-font-family, monospace);
+              margin: 0;
+              padding: 1em;
+              background: var(--vscode-editor-background);
+              color: var(--vscode-editor-foreground);
+            }
+            pre {
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              padding: 1em;
+              background: var(--vscode-editor-background);
+              border: 1px solid var(--vscode-dropdown-border);
+              border-radius: 3px;
+            }
+            h3 {
+              margin-top: 0;
+            }
+            .file-path {
+              font-weight: bold;
+              margin-top: 1em;
+              padding: 0.5em;
+              background: var(--vscode-sideBar-background);
+              border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
+            }
+          </style>
+        </head>
+        <body>
+          <h3>Doc Detective Results</h3>
+          <p>Showing simplified view due to rendering issues with the full view.</p>
+          <div id="content">
+          ${Object.keys(jsonObj).map(filePath => `
+            <div class="file-path">${filePath}</div>
+            <pre>${JSON.stringify(jsonObj[filePath], null, 2)}</pre>
+          `).join('')}
+          </div>
+        </body>
+        </html>`;
+        }
+        catch (error) {
+            log(`Error generating simplified HTML: ${error}`);
+            return this.getErrorHtml(`Failed to generate simplified HTML view: ${error}`);
+        }
+    }
+    // Method to show a simplified view of the results
+    getSimpleView(results) {
+        try {
+            if (!this._view) {
+                log('No view available for simple view');
+                return;
+            }
+            log('Setting simplified view for results');
+            this._view.webview.html = this.getSimplifiedHtmlForWebview(results);
+            log('Simple view set successfully');
+        }
+        catch (error) {
+            log(`Error setting simple view: ${error}`);
+            if (this._view) {
+                this._view.webview.html = this.getErrorHtml(`Failed to show simplified view: ${error}`);
+            }
+        }
     }
 }
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 function activate(context) {
-    console.log('Congratulations, your extension "doc-detective-vsc" is now active!');
+    log('Activating Doc Detective extension...');
     const disposable = vscode.commands.registerCommand('doc-detective-vsc.helloWorld', () => {
         vscode.window.showInformationMessage('Hello World from doc-detective-vsc!');
     });
@@ -393,16 +687,62 @@ function activate(context) {
     const provider = new DocDetectiveWebviewViewProvider(context);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider('docDetectiveView', provider));
     // Refresh the webview when visible editors change
-    context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => provider.updateWebview()));
+    context.subscriptions.push(vscode.window.onDidChangeVisibleTextEditors(() => {
+        log('Visible editors changed, updating webview...');
+        provider.updateWebview();
+    }));
     // Hot-reload the webview when the active editor changes (switching tabs)
-    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => provider.updateWebview()));
+    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => {
+        log('Active editor changed, updating webview...');
+        provider.updateWebview();
+    }));
     // Update when the color theme changes
     context.subscriptions.push(vscode.window.onDidChangeActiveColorTheme(() => {
+        log('Color theme changed, updating webview...');
         if (provider.hasView()) {
             provider.updateWebview();
         }
     }));
+    // Add a command to manually refresh the webview
+    const refreshCommand = vscode.commands.registerCommand('doc-detective-vsc.refresh', () => {
+        log('Manual refresh requested');
+        provider.updateWebview();
+        vscode.window.showInformationMessage('Doc Detective panel refreshed');
+    });
+    context.subscriptions.push(refreshCommand);
+    // Add a command to use simplified view
+    const simpleViewCommand = vscode.commands.registerCommand('doc-detective-vsc.simpleView', async () => {
+        log('Simple view requested');
+        if (provider.hasView()) {
+            try {
+                const editors = vscode.window.visibleTextEditors;
+                const filePaths = editors
+                    .filter(e => e.document.uri.scheme === 'file')
+                    .map(e => e.document.uri.fsPath);
+                const uniquePaths = Array.from(new Set(filePaths));
+                const results = {};
+                for (const file of uniquePaths) {
+                    try {
+                        const suites = await detectTests({ config: { input: file } });
+                        results[file] = suites;
+                    }
+                    catch (e) {
+                        results[file] = { error: String(e) };
+                    }
+                }
+                // Use the provider method to get the HTML
+                provider.getSimpleView(results);
+                vscode.window.showInformationMessage('Doc Detective panel using simplified view');
+            }
+            catch (error) {
+                log(`Error in simple view command: ${error}`);
+                vscode.window.showErrorMessage(`Error switching to simple view: ${error}`);
+            }
+        }
+    });
+    context.subscriptions.push(simpleViewCommand);
     context.subscriptions.push(outputChannel);
+    log('Doc Detective extension activated');
 }
 // This method is called when your extension is deactivated
 function deactivate() { }

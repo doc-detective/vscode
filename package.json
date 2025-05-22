@@ -13,13 +13,35 @@
     "*"
   ],
   "main": "./dist/extension.js",
-  "contributes": {
-    "commands": [
+  "contributes": {    "commands": [
       {
         "command": "doc-detective-vsc.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "doc-detective-vsc.refresh",
+        "title": "Refresh Doc Detective Panel",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "doc-detective-vsc.simpleView",
+        "title": "Use Simple View",
+        "icon": "$(list-flat)"
       }
-    ],
+    ],    "menus": {
+      "view/title": [
+        {
+          "command": "doc-detective-vsc.refresh",
+          "when": "view == docDetectiveView",
+          "group": "navigation"
+        },
+        {
+          "command": "doc-detective-vsc.simpleView",
+          "when": "view == docDetectiveView",
+          "group": "navigation"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {
