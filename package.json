@@ -28,6 +28,16 @@
         "icon": "$(list-flat)"
       }
     ],
+    "configuration": {
+      "title": "Doc Detective",
+      "properties": {
+        "docDetective.configPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Doc Detective configuration file. If not specified, the extension looks for .doc-detective.json, .doc-detective.yaml, or .doc-detective.yml in the workspace root."
+        }
+      }
+    },
     "menus": {
       "view/title": [
         {

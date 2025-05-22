@@ -1,7 +1,10 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 const { detectTests } = require('doc-detective-resolver');
+const yaml = require('js-yaml');
 
 // Create an output channel for logging
 const outputChannel = vscode.window.createOutputChannel('Doc Detective');
@@ -10,6 +13,73 @@ const outputChannel = vscode.window.createOutputChannel('Doc Detective');
 function log(message: string) {
   console.log(message);
   outputChannel.appendLine(message);
+}
+
+// Function to load and parse config file (JSON or YAML)
+async function loadConfigFile(filePath: string): Promise<any> {
+  try {
+    log(`Loading config file: ${filePath}`);
+    const content = fs.readFileSync(filePath, 'utf8');
+    
+    if (filePath.endsWith('.json')) {
+      return JSON.parse(content);
+    } else if (filePath.endsWith('.yaml') || filePath.endsWith('.yml')) {
+      return yaml.load(content);
+    }
+    throw new Error(`Unsupported file format: ${path.extname(filePath)}`);
+  } catch (error) {
+    log(`Error loading config file: ${error}`);
+    return null;
+  }
+}
+
+// Function to find the Doc Detective config file
+async function findConfigFile(workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined): Promise<string | null> {
+  // First check if a custom path is set in settings
+  const config = vscode.workspace.getConfiguration('docDetective');
+  const configPath = config.get<string>('configPath');
+  
+  if (configPath && configPath.trim() !== '') {
+    // If absolute path, use it directly
+    if (path.isAbsolute(configPath)) {
+      return fs.existsSync(configPath) ? configPath : null;
+    }
+    
+    // Relative path - try to resolve from each workspace folder
+    if (workspaceFolders && workspaceFolders.length > 0) {
+      for (const folder of workspaceFolders) {
+        const fullPath = path.join(folder.uri.fsPath, configPath);
+        if (fs.existsSync(fullPath)) {
+          return fullPath;
+        }
+      }
+    }
+    
+    // If we get here, the custom path wasn't found
+    log(`Custom config path not found: ${configPath}`);
+    return null;
+  }
+  
+  // If no custom path or not found, look for default files in workspace root
+  if (workspaceFolders && workspaceFolders.length > 0) {
+    for (const folder of workspaceFolders) {
+      const possibleFiles = [
+        path.join(folder.uri.fsPath, '.doc-detective.json'),
+        path.join(folder.uri.fsPath, '.doc-detective.yaml'),
+        path.join(folder.uri.fsPath, '.doc-detective.yml')
+      ];
+      
+      for (const file of possibleFiles) {
+        if (fs.existsSync(file)) {
+          log(`Found config file: ${file}`);
+          return file;
+        }
+      }
+    }
+  }
+  
+  log('No Doc Detective config file found');
+  return null;
 }
 
 // WebviewViewProvider for Doc Detective
@@ -115,12 +185,30 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
       // Show loading state
       this._view.webview.html = this.getLoadingHtml();
       
+      // Load config file if available
+      const configFilePath = await findConfigFile(vscode.workspace.workspaceFolders);
+      let baseConfig: any = null;
+      
+      if (configFilePath) {
+        baseConfig = await loadConfigFile(configFilePath);
+        log(`Loaded base config from ${configFilePath}`);
+      } else {
+        log('No config file found, using default configuration');
+      }
+      
       // For each file, detect tests
       const results: Record<string, any> = {};
       for (const file of uniquePaths) {
         try {
           log(`Detecting tests for file: ${file}`);
-          const suites = await detectTests({ config: { input: file } });
+          
+          // Create a config object that either extends the loaded config or creates a new one
+          const config = baseConfig ? { ...baseConfig } : {};
+          
+          // Always override the input with the current file
+          config.input = file;
+          
+          const suites = await detectTests({ config });
           results[file] = suites;
           log(`Detected tests for ${file}: ${JSON.stringify(suites).substring(0, 100)}...`);
         } catch (e) {
@@ -703,6 +791,19 @@ export function activate(context: vscode.ExtensionContext) {
       }
     })
   );
+
+  // Update when configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('docDetective.configPath')) {
+        log('Doc Detective configuration changed, updating webview...');
+        if (provider.hasView()) {
+          provider.updateWebview();
+        }
+      }
+    })
+  );
+
   // Add a command to manually refresh the webview
   const refreshCommand = vscode.commands.registerCommand('doc-detective-vsc.refresh', () => {
     log('Manual refresh requested');
@@ -721,10 +822,25 @@ export function activate(context: vscode.ExtensionContext) {
           .map(e => e.document.uri.fsPath);
         const uniquePaths = Array.from(new Set(filePaths));
         
+        // Load config file if available
+        const configFilePath = await findConfigFile(vscode.workspace.workspaceFolders);
+        let baseConfig: any = null;
+        
+        if (configFilePath) {
+          baseConfig = await loadConfigFile(configFilePath);
+          log(`Loaded base config from ${configFilePath} for simple view`);
+        }
+        
         const results: Record<string, any> = {};
         for (const file of uniquePaths) {
           try {
-            const suites = await detectTests({ config: { input: file } });
+            // Create a config object that either extends the loaded config or creates a new one
+            const config = baseConfig ? { ...baseConfig } : {};
+            
+            // Always override the input with the current file
+            config.input = file;
+            
+            const suites = await detectTests({ config });
             results[file] = suites;
           } catch (e) {
             results[file] = { error: String(e) };
