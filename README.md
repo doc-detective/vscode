@@ -1,10 +1,13 @@
 # doc-detective-vsc README
 
-This is the README for your extension "doc-detective-vsc". After writing up a brief description, we recommend including the following sections.
+A VS Code extension for running Doc Detective - a documentation testing tool.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- Analyzes open files using Doc Detective
+- Automatically updates results when files are saved
+- Updates when switching between files
+- Provides both detailed and simplified views
 
 For example if there is an image subfolder under your extension project workspace:
 

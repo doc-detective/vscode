@@ -203,10 +203,10 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
           }
         </style>
       </head>
-      <body>
-        <div class="message">
+      <body>        <div class="message">
           <h3>No files open</h3>
           <p>Open files in the editor to see Doc Detective results.</p>
+          <p><em>Results automatically update when files are saved.</em></p>
         </div>
       </body>
       </html>`;
@@ -235,11 +235,11 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
             margin: 1em 0;
           }
         </style>
-      </head>
-      <body>
+      </head>      <body>
         <h3>Doc Detective Error</h3>
         <div class="error">${errorMessage}</div>
         <p>Check the Doc Detective output channel for more details.</p>
+        <p><em>Doc Detective automatically updates when files are saved.</em></p>
       </body>
       </html>`;
   }
@@ -682,6 +682,14 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(() => {
       log('Active editor changed, updating webview...');
+      provider.updateWebview();
+    })
+  );
+
+  // Update the webview when a file is saved
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument((document) => {
+      log(`File saved: ${document.uri.fsPath}, updating webview...`);
       provider.updateWebview();
     })
   );

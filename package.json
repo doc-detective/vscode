@@ -1,7 +1,7 @@
 {
   "name": "doc-detective-vsc",
   "displayName": "doc-detective-vsc",
-  "description": "",
+  "description": "Doc Detective analyzer with real-time updates when files are saved",
   "version": "0.0.2",
   "engines": {
     "vscode": "^1.100.0"
