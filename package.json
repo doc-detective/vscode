@@ -46,7 +46,7 @@
       "activitybar": [
         {
           "id": "docDetectiveSidebar",
-          "title": "Doc Detective Panel",
+          "title": "Doc Detective",
           "icon": "media/icon.svg"
         }
       ]
@@ -55,7 +55,7 @@
       "docDetectiveSidebar": [
         {
           "id": "docDetectiveView",
-          "name": "Doc Detective Side Panel",
+          "name": "Detected Tests",
           "type": "webview"
         }
       ]

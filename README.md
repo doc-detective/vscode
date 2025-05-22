@@ -1,4 +1,6 @@
-# doc-detective-vsc README
+# Doc Detective VSCode Extension
+
+[![Version](https://vsmarketplacebadge.apphb.com/version-short/Doc-Detective.doc-detective.svg)](https://marketplace.visualstudio.com/items?itemName=Doc-Detective.doc-detective)
 
 A VS Code extension for running Doc Detective - a documentation testing tool.
 
@@ -7,7 +9,6 @@ A VS Code extension for running Doc Detective - a documentation testing tool.
 - Analyzes open files using Doc Detective
 - Automatically updates results when files are saved
 - Updates when switching between files
-- Provides both detailed and simplified views
 
 For example if there is an image subfolder under your extension project workspace:
 
