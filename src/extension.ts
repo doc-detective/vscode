@@ -9,13 +9,25 @@ const yaml = require('js-yaml');
 // Create an output channel for logging
 const outputChannel = vscode.window.createOutputChannel('Doc Detective');
 
-// Helper function to log messages to both console and output channel
+/**
+ * Logs a message to both the console and the extension's output channel.
+ *
+ * @param message - The message to log.
+ */
 function log(message: string) {
   console.log(message);
   outputChannel.appendLine(message);
 }
 
-// Function to load and parse config file (JSON or YAML)
+/**
+ * Loads and parses a configuration file in JSON or YAML format from the specified path.
+ *
+ * @param filePath - The absolute path to the configuration file.
+ * @returns The parsed configuration object, or {@link null} if loading or parsing fails.
+ *
+ * @remark
+ * Returns {@link null} if the file cannot be read, parsed, or if the file format is unsupported.
+ */
 async function loadConfigFile(filePath: string): Promise<any> {
   try {
     log(`Loading config file: ${filePath}`);
@@ -33,7 +45,14 @@ async function loadConfigFile(filePath: string): Promise<any> {
   }
 }
 
-// Function to find the Doc Detective config file
+/**
+ * Searches for the Doc Detective configuration file in the workspace.
+ *
+ * Checks for a user-specified config path in settings, resolving absolute or relative paths. If not found, searches for default config filenames in each workspace folder root. Returns the path to the first config file found, or `null` if none exist.
+ *
+ * @param workspaceFolders - The workspace folders to search for the config file.
+ * @returns The path to the configuration file, or `null` if not found.
+ */
 async function findConfigFile(workspaceFolders: readonly vscode.WorkspaceFolder[] | undefined): Promise<string | null> {
   // First check if a custom path is set in settings
   const config = vscode.workspace.getConfiguration('docDetective');
@@ -741,7 +760,13 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
 }
 
 // This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+/**
+ * Activates the Doc Detective extension and registers its commands, webview provider, and event listeners.
+ *
+ * Sets up the sidebar panel for detecting and displaying test suites in open files, and ensures the panel updates automatically in response to editor, file, theme, and configuration changes. Also registers commands for manual refresh and switching to a simplified view.
+ *
+ * @param context - The VS Code extension context used for managing extension lifecycle and subscriptions.
+ */
 
 export function activate(context: vscode.ExtensionContext) {
   log('Activating Doc Detective extension...');
@@ -862,5 +887,9 @@ export function activate(context: vscode.ExtensionContext) {
   log('Doc Detective extension activated');
 }
 
-// This method is called when your extension is deactivated
+/**
+ * Deactivates the extension.
+ *
+ * This function is called by Visual Studio Code when the extension is deactivated. No cleanup actions are performed.
+ */
 export function deactivate() {}
