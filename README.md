@@ -1,75 +1,61 @@
 # Doc Detective VSCode Extension
 
-[![Version](https://vsmarketplacebadge.apphb.com/version-short/Doc-Detective.doc-detective.svg)](https://marketplace.visualstudio.com/items?itemName=Doc-Detective.doc-detective)
-
-A VS Code extension for running Doc Detective - a documentation testing tool.
+The Doc Detective VSCode Extension integrates the [Doc Detective](https://doc-detective.com) documentation testing framework directly into your Visual Studio Code environment. This extension helps you detect, view, and manage documentation tests embedded in your content files, making it easier to keep your documentation accurate and up-to-date.
 
 ## Features
 
-- Analyzes open files using Doc Detective
-- Automatically updates results when files are saved
-- Updates when switching between files
+- **Real-time Test Detection**: Automatically detects Doc Detective tests in your open files
+- **Sidebar Integration**: View detected tests in a dedicated Doc Detective panel in the activity bar
+- **Interactive Test Explorer**: Navigate through detected tests with collapsible sections for easy viewing
+- **Syntax Highlighting**: Tests are displayed with proper syntax highlighting for improved readability
 
-For example if there is an image subfolder under your extension project workspace:
+## How It Works
 
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
+Doc Detective is a documentation testing framework that helps validate documentation against real product behavior. This extension uses `doc-detective-resolver` to scan your documentation files for embedded tests and displays them in the sidebar panel.
+    
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code v1.100.0 or higher
 
-## Extension Settings
+## Using Doc Detective Extension
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+1. Open a file that contains Doc Detective tests or inline test steps
+2. Click the Doc Detective icon in the activity bar
+3. Review the detected tests in your document
 
-For example:
+The extension will automatically scan open files for:
+- Inline tests using HTML comments or markdown comment syntax
+- Test specifications in YAML or JSON format
+- Documentation with embedded test steps
 
-This extension contributes the following settings:
+## Related Projects
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+Doc Detective has multiple components that work together:
 
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- [Doc Detective](https://github.com/doc-detective/doc-detective): The main CLI tool for running documentation tests
+- [Doc Detective Resolver](https://github.com/doc-detective/resolver): Library for detecting tests in documentation files
+- [Doc Detective Core](https://github.com/doc-detective/doc-detective-core): Core testing functionality
+- [Doc Detective Companion](https://github.com/doc-detective/doc-detective-companion): Browser extension for test creation
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.2
 
-### 1.0.0
+- Initial preview release
+- Basic test detection functionality
+- Sidebar panel integration
+- Support for viewing detected tests
 
-Initial release of ...
+## Learn More
 
-### 1.0.1
+- [Doc Detective Documentation](https://doc-detective.com)
+- [GitHub Repository](https://github.com/doc-detective/doc-detective-vsc)
+- [Discord Community](https://discord.gg/2M7wXEThfF)
 
-Fixed issue #.
+## Contributing
 
-### 1.1.0
-
-Added features X, Y, and Z.
+Interested in contributing to this extension? Check out the [Doc Detective GitHub organization](https://github.com/doc-detective) to learn more about the project and how to get involved.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Made with ❤️ by the Doc Detective team**
