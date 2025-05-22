@@ -35,16 +35,7 @@ Doc Detective has multiple components that work together:
 - [Doc Detective](https://github.com/doc-detective/doc-detective): The main CLI tool for running documentation tests
 - [Doc Detective Resolver](https://github.com/doc-detective/resolver): Library for detecting tests in documentation files
 - [Doc Detective Core](https://github.com/doc-detective/doc-detective-core): Core testing functionality
-- [Doc Detective Companion](https://github.com/doc-detective/doc-detective-companion): Browser extension for test creation
-
-## Release Notes
-
-### 0.0.2
-
-- Initial preview release
-- Basic test detection functionality
-- Sidebar panel integration
-- Support for viewing detected tests
+- [Doc Detective Common](https://github.com/doc-detective/doc-detective-common): Shared utilities and components
 
 ## Learn More
 
