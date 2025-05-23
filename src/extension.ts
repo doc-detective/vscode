@@ -180,9 +180,6 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
       // Listen for messages from the webview (if needed)
       webviewView.webview.onDidReceiveMessage(async (message) => {
         log(`Received message from webview: ${JSON.stringify(message)}`);
-        if (message.command === 'refresh') {
-          await this.updateWebview();
-        }
       });
       
       log('Webview view resolved successfully');
@@ -845,13 +842,7 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
-  // Add a command to manually refresh the webview
-  const refreshCommand = vscode.commands.registerCommand('doc-detective.refresh', () => {
-    log('Manual refresh requested');
-    provider.updateWebview();
-    vscode.window.showInformationMessage('Doc Detective panel refreshed');
-  });
-  context.subscriptions.push(refreshCommand);
+
     // Add a command to use simplified view
   const simpleViewCommand = vscode.commands.registerCommand('doc-detective.simpleView', async () => {
     log('Simple view requested');
