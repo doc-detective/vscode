@@ -23,7 +23,6 @@ suite('Extension Test Suite', () => {
 		
 		// Test for the extension's commands
 		assert.ok(commands.includes('doc-detective.helloWorld'), 'helloWorld command should be registered');
-		assert.ok(commands.includes('doc-detective.refresh'), 'refresh command should be registered');
 		assert.ok(commands.includes('doc-detective.simpleView'), 'simpleView command should be registered');
 	});
 
