@@ -17,6 +17,24 @@ Doc Detective is a documentation testing framework that helps validate documenta
 
 - Visual Studio Code v1.100.0 or higher
 
+## Installation
+
+### Via VS Code Marketplace
+
+1. Open VS Code
+2. Go to the Extensions view (Ctrl+Shift+X)
+3. Search for "Doc Detective"
+4. Click Install
+
+### Manual Installation
+
+If you prefer to install the extension manually:
+
+1. Download the VSIX file from the [latest release](https://github.com/doc-detective/vscode/releases/latest)
+2. In VS Code, go to the Extensions view (Ctrl+Shift+X)
+3. Click the "..." menu in the top right of the Extensions view
+4. Select "Install from VSIX..." and choose the downloaded file
+
 ## Using Doc Detective Extension
 
 1. Open a file that contains Doc Detective tests or inline test steps

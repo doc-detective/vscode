@@ -53,7 +53,22 @@ jobs:
           cache-dependency-path: package-lock.json
           registry-url: https://registry.npmjs.org/
 
-      - run: npm ci
-      - run: npx vsce publish --no-yarn
+      - name: Install dependencies
+        run: npm ci
+      
+      # Package the VSIX file
+      - name: Package VSIX
+        run: npx vsce package
+      
+      # Upload VSIX to release
+      - name: Upload VSIX to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "*.vsix"
+          tag_name: ${{ github.event.release.tag_name }}
+      
+      # Publish to VS Code Marketplace
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish --no-yarn
         env:
           VSCE_PAT: ${{secrets.VSCODE_MARKETPLACE_TOKEN}}
