@@ -257,14 +257,8 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
         this._view.webview.html = this.getHtmlForWebview(results);
         log('Webview updated successfully with full view');
       } catch (renderError) {
-        log(`Error with full view rendering, falling back to simplified view: ${renderError}`);
-        try {
-          this._view.webview.html = this.getSimplifiedHtmlForWebview(results);
-          log('Webview updated with simplified view');
-        } catch (fallbackError) {
-          log(`Error with simplified view too: ${fallbackError}`);
-          this._view.webview.html = this.getErrorHtml(`Failed to render results: ${renderError}. Fallback also failed: ${fallbackError}`);
-        }
+        log(`Error rendering view: ${renderError}`);
+        this._view.webview.html = this.getErrorHtml(`Failed to render results: ${renderError}`);
       }
     } catch (error) {
       log(`Error updating webview: ${error}`);
@@ -699,87 +693,13 @@ class DocDetectiveWebviewViewProvider implements vscode.WebviewViewProvider {
       return this.getErrorHtml(`Failed to generate HTML: ${error}`);
     }
   }
-
-  private getSimplifiedHtmlForWebview(jsonObj: any): string {
-    try {
-      // Create a simpler representation without all the complex HTML
-      return `<!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'unsafe-inline'; connect-src vscode-webview:;">
-          <title>Doc Detective Results (Simple View)</title>
-          <style>
-            body {
-              font-family: var(--vscode-editor-font-family, monospace);
-              margin: 0;
-              padding: 1em;
-              background: var(--vscode-editor-background);
-              color: var(--vscode-editor-foreground);
-            }
-            pre {
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              padding: 1em;
-              background: var(--vscode-editor-background);
-              border: 1px solid var(--vscode-dropdown-border);
-              border-radius: 3px;
-            }
-            h3 {
-              margin-top: 0;
-            }
-            .file-path {
-              font-weight: bold;
-              margin-top: 1em;
-              padding: 0.5em;
-              background: var(--vscode-sideBar-background);
-              border-bottom: 1px solid var(--vscode-sideBarSectionHeader-border);
-            }
-          </style>
-        </head>
-        <body>
-          <h3>Doc Detective Results</h3>
-          <p>Showing simplified view due to rendering issues with the full view.</p>
-          <div id="content">
-          ${Object.keys(jsonObj).map(filePath => `
-            <div class="file-path">${filePath}</div>
-            <pre>${JSON.stringify(jsonObj[filePath], null, 2)}</pre>
-          `).join('')}
-          </div>
-        </body>
-        </html>`;
-    } catch (error) {
-      log(`Error generating simplified HTML: ${error}`);
-      return this.getErrorHtml(`Failed to generate simplified HTML view: ${error}`);
-    }
-  }
-
-  // Method to show a simplified view of the results
-  public getSimpleView(results: Record<string, any>): void {
-    try {
-      if (!this._view) {
-        log('No view available for simple view');
-        return;
-      }
-      
-      log('Setting simplified view for results');
-      this._view.webview.html = this.getSimplifiedHtmlForWebview(results);
-      log('Simple view set successfully');
-    } catch (error) {
-      log(`Error setting simple view: ${error}`);
-      if (this._view) {
-        this._view.webview.html = this.getErrorHtml(`Failed to show simplified view: ${error}`);
-      }
-    }
-  }
 }
 
 // This method is called when your extension is activated
 /**
  * Activates the Doc Detective extension and registers its commands, webview provider, and event listeners.
  *
- * Sets up the sidebar panel for detecting and displaying test suites in open files, and ensures the panel updates automatically in response to editor, file, theme, and configuration changes. Also registers commands for manual refresh and switching to a simplified view.
+ * Sets up the sidebar panel for detecting and displaying test suites in open files, and ensures the panel updates automatically in response to editor, file, theme, and configuration changes. Also registers commands for manual refresh.
  *
  * @param context - The VS Code extension context used for managing extension lifecycle and subscriptions.
  */
@@ -852,52 +772,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage('Doc Detective panel refreshed');
   });
   context.subscriptions.push(refreshCommand);
-    // Add a command to use simplified view
-  const simpleViewCommand = vscode.commands.registerCommand('doc-detective.simpleView', async () => {
-    log('Simple view requested');
-    if (provider.hasView()) {
-      try {
-        const editors = vscode.window.visibleTextEditors;
-        const filePaths = editors
-          .filter(e => e.document.uri.scheme === 'file')
-          .map(e => e.document.uri.fsPath);
-        const uniquePaths = Array.from(new Set(filePaths));
-        
-        // Load config file if available
-        const configFilePath = await findConfigFile(vscode.workspace.workspaceFolders);
-        let baseConfig: any = null;
-        
-        if (configFilePath) {
-          baseConfig = await loadConfigFile(configFilePath);
-          log(`Loaded base config from ${configFilePath} for simple view`);
-        }
-        
-        const results: Record<string, any> = {};
-        for (const file of uniquePaths) {
-          try {
-            // Create a config object that either extends the loaded config or creates a new one
-            const config = baseConfig ? { ...baseConfig } : {};
-            
-            // Always override the input with the current file
-            config.input = file;
-            
-            const suites = await detectTests({ config });
-            results[file] = suites;
-          } catch (e) {
-            results[file] = { error: String(e) };
-          }
-        }
-        
-        // Use the provider method to get the HTML
-        provider.getSimpleView(results);
-        vscode.window.showInformationMessage('Doc Detective panel using simplified view');
-      } catch (error) {
-        log(`Error in simple view command: ${error}`);
-        vscode.window.showErrorMessage(`Error switching to simple view: ${error}`);
-      }
-    }
-  });
-  context.subscriptions.push(simpleViewCommand);
 
   context.subscriptions.push(outputChannel);
   log('Doc Detective extension activated');

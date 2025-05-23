@@ -17,7 +17,6 @@
   "activationEvents": [
     "onCommand:doc-detective-vsc.helloWorld",
     "onCommand:doc-detective-vsc.refresh",
-    "onCommand:doc-detective-vsc.simpleView",
     "onView:docDetectiveView"
   ],
   "main": "./dist/extension.js",
@@ -31,11 +30,6 @@
         "command": "doc-detective.refresh",
         "title": "Refresh Doc Detective Panel",
         "icon": "$(refresh)"
-      },
-      {
-        "command": "doc-detective.simpleView",
-        "title": "Use Simple View",
-        "icon": "$(list-flat)"
       }
     ],
     "configuration": {
@@ -52,11 +46,6 @@
       "view/title": [
         {
           "command": "doc-detective.refresh",
-          "when": "view == docDetectiveView",
-          "group": "navigation"
-        },
-        {
-          "command": "doc-detective.simpleView",
           "when": "view == docDetectiveView",
           "group": "navigation"
         }
