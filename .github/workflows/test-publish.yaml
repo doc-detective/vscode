@@ -65,6 +65,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: "*.vsix"
+          tag_name: ${{ github.event.release.tag_name }}
       
       # Publish to VS Code Marketplace
       - name: Publish to VS Code Marketplace
