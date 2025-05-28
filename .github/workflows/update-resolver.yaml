@@ -55,7 +55,6 @@ jobs:
         else
           git commit -m "chore: bump doc-detective-resolver version to ${{ steps.version.outputs.version }}"
           git push
-          git clean -fd
           echo "has_changes=true" >> $GITHUB_OUTPUT
         fi
 
@@ -63,6 +62,8 @@ jobs:
       id: patch
       if: steps.commit.outputs.has_changes == 'true'
       run: |
+        git checkout -- .
+        git clean -fd
         npm version patch
         git push
         git push --tags
