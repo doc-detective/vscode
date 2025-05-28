@@ -66,6 +66,7 @@ jobs:
         with:
           files: "*.vsix"
           tag_name: ${{ github.event.release.tag_name }}
+          token: ${{ secrets.DD_DEP_UPDATE_TOKEN }}
       
       # Publish to VS Code Marketplace
       - name: Publish to VS Code Marketplace
