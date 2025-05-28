@@ -55,6 +55,7 @@ jobs:
         else
           git commit -m "chore: bump doc-detective-resolver version to ${{ steps.version.outputs.version }}"
           git push
+          git clean -fd
           echo "has_changes=true" >> $GITHUB_OUTPUT
         fi
 
