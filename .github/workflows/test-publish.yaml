@@ -56,17 +56,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      # Package the VSIX file
-      - name: Package VSIX
-        run: npx vsce package
+      # # Package the VSIX file
+      # - name: Package VSIX
+      #   run: npx vsce package
       
-      # Upload VSIX to release
-      - name: Upload VSIX to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: "*.vsix"
-          tag_name: ${{ github.event.release.tag_name }}
-          token: ${{ secrets.DD_DEP_UPDATE_TOKEN }}
+      # # Upload VSIX to release
+      # - name: Upload VSIX to Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: "*.vsix"
+      #     tag_name: ${{ github.event.release.tag_name }}
+      #     token: ${{ secrets.DD_DEP_UPDATE_TOKEN }}
       
       # Publish to VS Code Marketplace
       - name: Publish to VS Code Marketplace
