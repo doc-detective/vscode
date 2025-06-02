@@ -3,7 +3,7 @@
   "displayName": "Doc Detective",
   "publisher": "DocDetective",
   "description": "View Doc Detective tests for active files.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "sponsor": {
     "url": "https://github.com/sponsors/doc-detective"
   },
