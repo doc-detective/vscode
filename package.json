@@ -90,7 +90,7 @@
   },
   "dependencies": {
     "@vscode/vsce": "^3.4.2",
-    "doc-detective-resolver": "^3.0.4",
+    "doc-detective-resolver": "^3.0.5",
     "js-yaml": "^4.1.0"
   }
 }
