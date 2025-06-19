@@ -93,7 +93,7 @@ jobs:
       if: steps.commit.outputs.has_changes == 'true'
       # Install GitHub CLI for fetching PRs and release notes
       run: |
-        sudo apt-get update && sudo apt-get install -y gh jq
+        brew install gh jq
 
     - name: Gather merged PRs since last release
       id: merged_prs
