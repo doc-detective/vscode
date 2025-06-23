@@ -42,7 +42,7 @@ jobs:
       - run: npm ci
       - run: npm test
 
-  publish-npm:
+  publish-vsc:
     if: github.event_name == 'release' && github.event.action == 'published'
     needs: test
     runs-on: ubuntu-latest
