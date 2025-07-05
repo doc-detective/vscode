@@ -5,11 +5,20 @@ node_modules
 
 # production
 /build
+dist/
+/out
+
+# config
+docs/
+results/
 
 # misc
 .DS_Store
-
 npm-debug.log*
-
 /.vscode-test
-/out
+
+# transpilation
+src/**/*.js
+src/**/*.js.map
+test/**/*.js
+test/**/*.js.map
