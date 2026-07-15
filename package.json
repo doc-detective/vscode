@@ -16,7 +16,13 @@
   ],
   "activationEvents": [
     "onCommand:doc-detective-vsc.helloWorld",
-    "onView:docDetectiveView"
+    "onView:docDetectiveView",
+    "workspaceContains:**/*.spec.json",
+    "workspaceContains:**/*.spec.yaml",
+    "workspaceContains:**/*.spec.yml",
+    "workspaceContains:**/.doc-detective.json",
+    "workspaceContains:**/.doc-detective.yaml",
+    "workspaceContains:**/.doc-detective.yml"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -33,6 +39,16 @@
           "type": "string",
           "default": "",
           "description": "Path to the Doc Detective configuration file. If not specified, the extension looks for .doc-detective.json, .doc-detective.yaml, or .doc-detective.yml in the workspace root."
+        },
+        "docDetective.languageServer.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run the Doc Detective language server to provide diagnostics, completion, and hover for test specs (and inline tests in Markdown/AsciiDoc/HTML)."
+        },
+        "docDetective.languageServer.path": {
+          "type": "string",
+          "default": "",
+          "description": "Path to a doc-detective CLI entry (bin/doc-detective.js) to run the language server from. Leave empty to use the project-local install, or npx as a fallback."
         }
       }
     },
@@ -91,6 +107,7 @@
   "dependencies": {
     "@vscode/vsce": "^3.4.2",
     "doc-detective-resolver": "^3.6.2",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "vscode-languageclient": "^9.0.1"
   }
 }
