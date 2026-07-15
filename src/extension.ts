@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { promises as fsp } from 'fs';
+import { startLanguageServer, stopLanguageServer } from './lspClient';
 const { detectTests } = require('doc-detective-resolver');
 const yaml = require('js-yaml');
 
@@ -766,13 +767,31 @@ export function activate(context: vscode.ExtensionContext) {
     })
   );
 
+  // Restart the language server when its settings change.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+      if (
+        e.affectsConfiguration('docDetective.languageServer.enable') ||
+        e.affectsConfiguration('docDetective.languageServer.path')
+      ) {
+        log('Language server configuration changed, restarting…');
+        await stopLanguageServer();
+        await startLanguageServer(log);
+      }
+    })
+  );
+
+  // Start the language server (diagnostics/completion/hover for test specs).
+  // Failures are handled internally and never block the rest of activation.
+  void startLanguageServer(log);
+
   context.subscriptions.push(outputChannel);
   log('Doc Detective extension activated');
 }
 
 /**
- * Deactivates the extension.
- *
- * This function is called by Visual Studio Code when the extension is deactivated. No cleanup actions are performed.
+ * Deactivates the extension, stopping the language server if it is running.
  */
-export function deactivate() {}
+export function deactivate(): Thenable<void> | undefined {
+  return stopLanguageServer();
+}
