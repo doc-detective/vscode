@@ -144,22 +144,29 @@ export async function startLanguageServer(
     ],
   };
 
-  client = new LanguageClient(
+  // Hold the client in a local so a concurrent restart (the settings-change
+  // handler) reassigning the module-level `client` mid-await can't make us
+  // start or clear the wrong instance.
+  const started = new LanguageClient(
     'docDetectiveLsp',
     'Doc Detective Language Server',
     serverOptions,
     clientOptions,
   );
+  client = started;
 
   try {
     log('Starting Doc Detective language server…');
-    await client.start();
+    await started.start();
     log('Doc Detective language server started.');
   } catch (error) {
     // A missing/old CLI (no `lsp` subcommand) shouldn't break the rest of the
-    // extension — surface it and carry on.
+    // extension — surface it and carry on. Only clear `client` if it is still
+    // this instance; a restart may already have replaced it.
     log(`Doc Detective language server failed to start: ${error}`);
-    client = undefined;
+    if (client === started) {
+      client = undefined;
+    }
   }
 }
 
@@ -168,6 +175,12 @@ export async function stopLanguageServer(): Promise<void> {
   const running = client;
   client = undefined;
   if (running) {
-    await running.stop();
+    try {
+      await running.stop();
+    } catch {
+      // The server may already be gone (crashed / never fully started);
+      // there's nothing left to clean up, and this runs from a fire-and-forget
+      // config listener and from deactivate(), so don't surface a rejection.
+    }
   }
 }
