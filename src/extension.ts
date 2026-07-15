@@ -776,14 +776,14 @@ export function activate(context: vscode.ExtensionContext) {
       ) {
         log('Language server configuration changed, restarting…');
         await stopLanguageServer();
-        await startLanguageServer(context, log);
+        await startLanguageServer(log);
       }
     })
   );
 
   // Start the language server (diagnostics/completion/hover for test specs).
   // Failures are handled internally and never block the rest of activation.
-  void startLanguageServer(context, log);
+  void startLanguageServer(log);
 
   context.subscriptions.push(outputChannel);
   log('Doc Detective extension activated');

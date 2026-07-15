@@ -107,10 +107,11 @@ function buildServerOptions(cwd: string | undefined): ServerOptions {
 /**
  * Start the language server, unless disabled by
  * `docDetective.languageServer.enable`. Idempotent-ish: a second call is a
- * no-op while a client is running. Registers disposal on the context.
+ * no-op while a client is running. The server is stopped via `deactivate()`
+ * (and the settings-change handler stops it before restarting), so no
+ * per-start subscription is registered — that would accumulate on each restart.
  */
 export async function startLanguageServer(
-  context: vscode.ExtensionContext,
   log: (message: string) => void,
 ): Promise<void> {
   if (client) {return;}
@@ -153,7 +154,6 @@ export async function startLanguageServer(
   try {
     log('Starting Doc Detective language server…');
     await client.start();
-    context.subscriptions.push({ dispose: () => void stopLanguageServer() });
     log('Doc Detective language server started.');
   } catch (error) {
     // A missing/old CLI (no `lsp` subcommand) shouldn't break the rest of the
